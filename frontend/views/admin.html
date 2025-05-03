@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统管理控制台 | NeuroDrive Admin</title>
+    <style>
+        :root {
+            --primary: #00f7ff;
+            --secondary: #7b61ff;
+            --bg: #0a0e1a;
+            --card-bg: rgba(15, 22, 45, 0.9);
+            --danger: #ff467e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui;
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .main-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: rgba(10, 14, 26, 0.95);
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .main-nav h2 {
+            font-size: 1.8rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .user-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        #adminLogout {
+            background: rgba(255, 71, 126, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #adminLogout:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .content-container {
+            padding: 2rem 3rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .management-panel {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(123, 97, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .neon-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(0, 247, 255, 0.2);
+        }
+
+        .neon-header h3 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .user-table th,
+        .user-table td {
+            padding: 1.2rem;
+            text-align: left;
+        }
+
+        .user-table thead {
+            background: linear-gradient(45deg, var(--card-bg), rgba(15, 22, 45, 0.7));
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .user-table th {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .user-table tbody tr {
+            transition: background 0.3s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .user-table tbody tr:hover {
+            background: rgba(0, 247, 255, 0.03);
+        }
+
+        .user-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: rgba(0, 247, 255, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-edit:hover {
+            background: var(--primary);
+            color: var(--bg);
+        }
+
+        .btn-delete {
+            background: rgba(255, 71, 126, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* 新增统计卡片 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(123, 97, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <h2>🔐 NeuroDrive 管理控制台</h2>
+        <div class="user-info">
+            <span id="adminUser">管理员: system@neurodrive.ai</span>
+            <button id="adminLogout">⏻ 安全注销</button>
+        </div>
+    </nav>
+
+    <div class="content-container">
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value">1,024</div>
+                <div class="stat-label">今日活跃用户</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">98.6%</div>
+                <div class="stat-label">系统可用率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">32</div>
+                <div class="stat-label">在线设备</div>
+            </div>
+        </div>
+
+        <div class="management-panel">
+            <div class="neon-header">
+                <h3>📊 用户管理系统</h3>
+            </div>
+            
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>角色权限</th>
+                        <th>操作控制</th>
+                    </tr>
+                </thead>
+                <tbody id="userList">
+                    <!-- 示例数据 -->
+                    <tr>
+                        <td>admin@neurodrive.ai</td>
+                        <td><span class="role-tag">超级管理员</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-edit">✏️ 编辑</button>
+                                <button class="btn-delete">🗑️ 删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>audit@neurodrive.ai</td>
+                        <td><span class="role-tag">审计员</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-edit">✏️ 编辑</button>
+                                <button class="btn-delete">🗑️ 删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,101 @@
+/* 基础重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #0a0a1a;
+  color: #e0e0ff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(45deg, #0a0a1a 30%, #1a1a3a);
+}
+
+/* 认证容器 */
+.auth-container {
+  width: 400px;
+  padding: 2rem;
+  background: rgba(16, 16, 32, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 128, 255, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(64, 128, 255, 0.2);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.neon-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #40a9ff, transparent);
+  margin: 1rem 0;
+}
+
+/* 输入组样式 */
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+input {
+  width: 100%;
+  padding: 1rem 2.5rem 1rem 1rem;
+  background: rgba(32, 32, 64, 0.5);
+  border: 1px solid rgba(64, 128, 255, 0.3);
+  border-radius: 6px;
+  color: #e0e0ff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #40a9ff;
+  box-shadow: 0 0 10px rgba(64, 169, 255, 0.3);
+}
+
+.input-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #40a9ff;
+}
+
+button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(45deg, #40a9ff, #0066cc);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(64, 169, 255, 0.4);
+}
+
+.switch-auth {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+a {
+  color: #40a9ff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

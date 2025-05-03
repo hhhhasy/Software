@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>智能交互中心 | NeuroDrive</title>
+    <style>
+        :root {
+            --primary: #00f7ff;
+            --secondary: #7b61ff;
+            --bg: #0a0e1a;
+            --card-bg: rgba(15, 22, 45, 0.9);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui;
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .main-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: rgba(10, 14, 26, 0.95);
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1);
+            position: relative;
+        }
+
+        .main-nav h2 {
+            font-size: 1.8rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
+        }
+
+        .user-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        #logout {
+            background: rgba(255, 50, 50, 0.15);
+            color: #ff3232;
+            border: 1px solid #ff3232;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #logout:hover {
+            background: #ff3232;
+            color: white;
+        }
+
+        .content-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .input-card, .response-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(123, 97, 255, 0.2);
+        }
+
+        .input-card::before, .response-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            z-index: -1;
+            animation: borderFlow 6s linear infinite;
+        }
+
+        @keyframes borderFlow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .neon-header {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .neon-header h3 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .voice-btn {
+            align-self: flex-start;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.05);
+        }
+
+        #textInput {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 247, 255, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: white;
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            align-self: flex-end;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(123, 97, 255, 0.5);
+        }
+
+        .response-content {
+            min-height: 400px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        /* 新增元素 - 状态指示灯 */
+        .status-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #0f0;
+            box-shadow: 0 0 10px #0f0;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* 加载动画 */
+        .loader {
+            display: none;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <h2>🚗 NeuroDrive 智能驾驶系统</h2>
+        <div class="user-info">
+            <span id="currentUser">驾驶员: 访客用户</span>
+            <button id="logout">安全退出</button>
+        </div>
+    </nav>
+
+    <div class="content-container">
+        <div class="input-card">
+            <div class="neon-header">
+                <h3>🌌 多模态交互接口</h3>
+            </div>
+            <div class="input-section">
+                <button class="voice-btn">🎤 语音指令输入</button>
+                <textarea id="textInput" placeholder="输入文字指令或自然语言查询..."></textarea>
+                <button class="submit-btn">🚀 发送指令</button>
+            </div>
+        </div>
+
+        <div class="response-card">
+            <div class="neon-header">
+                <h3>💡 系统响应 & AI分析</h3>
+            </div>
+            <div id="responseArea" class="response-content">
+                <!-- 这里可以添加对话气泡样式 -->
+            </div>
+            <div class="loader"></div>
+        </div>
+    </div>
+
+    <div class="status-indicator">
+        <div class="status-led"></div>
+        <span>系统连接正常</span>
+    </div>
+</body>
+</html>

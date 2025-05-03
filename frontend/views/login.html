@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>智能车载系统 - 登录</title>
+    <link rel="stylesheet" href="../src/styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="header">
+            <h1>智能车载交互系统</h1>
+            <div class="neon-line"></div>
+        </div>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="text" id="username" placeholder="用户名" required>
+                <span class="input-icon">👤</span>
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="密码" required>
+                <span class="input-icon">🔒</span>
+            </div>
+            <button type="submit">登录</button>
+            <p class="switch-auth">没有账号？<a href="register.html">立即注册</a></p>
+        </form>
+    </div>
+    <script src="../src/renderer.js"></script>
+</body>
+</html>

@@ -226,7 +226,7 @@
                 <h3>🌌 多模态交互接口</h3>
             </div>
             <div class="input-section">
-                <button class="voice-btn">🎤 语音指令输入</button>
+                <button class="voice-btn" id="voiceBtn">🎤 语音指令输入</button>
                 <textarea id="textInput" placeholder="输入文字指令或自然语言查询..."></textarea>
                 <button class="submit-btn">🚀 发送指令</button>
             </div>
@@ -247,5 +247,9 @@
         <div class="status-led"></div>
         <span>系统连接正常</span>
     </div>
+<script src="../src/renderer.js"></script>
+<script>
+  document.getElementById('voiceBtn').addEventListener('click', toggleRecording);
+</script>
 </body>
 </html>

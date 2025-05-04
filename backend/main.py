@@ -5,6 +5,58 @@ import whisper
 import tempfile
 import os
 import pyttsx3
+import mediapipe as mp
+import cv2
+import numpy as np
+
+class HeadShakeDetector:
+    def __init__(self, shake_threshold=15, buffer_len=10):
+        self.mp_face_mesh = mp.solutions.face_mesh
+        self.face_mesh = self.mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+        self.shake_threshold = shake_threshold  # degrees of yaw change to count as shake
+        self.buffer_len = buffer_len
+        self.yaw_buffer = []
+
+    def get_head_yaw(self, landmarks, image_shape):
+        # Use left (234) and right (454) temple points for yaw approximation
+        left = landmarks[234]
+        right = landmarks[454]
+        # Compute vector difference
+        dx = left.x - right.x
+        dy = left.y - right.y
+        # Yaw angle approximation via arctan2
+        angle = np.degrees(np.arctan2(dx, dy))
+        return angle
+
+    def detect(self, image):
+        h, w = image.shape[:2]
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.face_mesh.process(rgb)
+        if not results.multi_face_landmarks:
+            return False, image
+
+        lm = results.multi_face_landmarks[0].landmark
+        yaw = self.get_head_yaw(lm, image.shape)
+        # maintain buffer
+        self.yaw_buffer.append(yaw)
+        if len(self.yaw_buffer) > self.buffer_len:
+            self.yaw_buffer.pop(0)
+
+        # Check change in yaw over buffer
+        min_yaw, max_yaw = min(self.yaw_buffer), max(self.yaw_buffer)
+        shake_detected = (max_yaw - min_yaw) > self.shake_threshold
+
+        # Draw indicators
+        cv2.putText(image, f"Yaw: {yaw:.1f}", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
+        status = "Shake" if shake_detected else "Still"
+        cv2.putText(image, f"Status: {status}", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+        return shake_detected, image
+        
 
 app = FastAPI()
 
@@ -88,6 +140,42 @@ async def speech_to_text(audio: UploadFile = File(...)) -> dict:
         return {"text": recognized_text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"语音识别错误: {str(e)}")
+
+@app.post('/api/process-video')
+async def process_video():
+    # 创建摇头检测器
+    detector = HeadShakeDetector(shake_threshold=15, buffer_len=15)
+
+    # 初始化摄像头
+    cap = cv2.VideoCapture(0)
+    shake_detected = False
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        shake, annotated_frame = detector.detect(frame)
+        cv2.imshow('Head Shake Detection', annotated_frame)
+
+        if shake:
+            print("🚨 检测到摇头行为！")
+            shake_detected = True
+            break
+
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    if shake_detected:
+        print("⚠️ 提示：请勿在驾驶时摇头晃脑！")
+        engine.say("请勿在驾驶时摇头晃脑！请集中注意力。")
+        engine.runAndWait()
+        return {'warning': '请集中注意力！'}
+    else:
+        return {'status': '正常'}
 
 if __name__ == "__main__":
     import uvicorn

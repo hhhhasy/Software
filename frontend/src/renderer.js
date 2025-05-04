@@ -120,3 +120,25 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     alert(err.detail || '注册失败')
   }
 })
+
+const videoBtn = document.getElementById('videoBtn');
+if (videoBtn) {
+    videoBtn.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const track = stream.getVideoTracks()[0];
+            track.stop();
+
+            const response = await fetch('http://localhost:8000/api/process-video', { method: 'POST' });
+            if (!response.ok) throw await response.json();
+
+            const data = await response.json();
+            if (data.warning) {
+                alert('请集中注意力！');
+            }
+        } catch (err) {
+            console.error('视频处理错误:', err);
+            alert('视频处理失败: ' + (err.detail || '服务器错误'));
+        }
+    });
+}

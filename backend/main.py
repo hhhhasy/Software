@@ -8,6 +8,8 @@ import pyttsx3
 import mediapipe as mp
 import cv2
 import numpy as np
+import joblib
+import time
 
 class HeadShakeDetector:
     def __init__(self, shake_threshold=15, buffer_len=10):
@@ -176,6 +178,69 @@ async def process_video():
         return {'warning': '请集中注意力！'}
     else:
         return {'status': '正常'}
+    
+
+@app.post('/api/process-gesture')
+async def process_gesture():
+    GESTURES = ['fist', 'palm', 'thumbs_up', 'OK']
+    # 加载模型
+    clf = joblib.load('model/gesture_model.pkl')
+
+    mp_hands = mp.solutions.hands
+    hands = mp_hands.Hands(static_image_mode=False,
+                        max_num_hands=1,
+                        min_detection_confidence=0.7,
+                        min_tracking_confidence=0.7)
+    mp_draw = mp.solutions.drawing_utils
+
+    cap = cv2.VideoCapture(0)
+
+    recognized_label = None
+    display_start = None
+
+    while True:
+        ret, img = cap.read()
+        if not ret:
+            break
+
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = hands.process(img_rgb)
+
+        # 如果检测到手势并且还未识别过
+        if results.multi_hand_landmarks and recognized_label is None:
+            lm = results.multi_hand_landmarks[0]
+            row = []
+            for p in lm.landmark:
+                row += [p.x, p.y, p.z]
+            pred = clf.predict([row])[0]
+            recognized_label = GESTURES[pred]
+            # 在终端输出
+            #print(f"Detected gesture: {recognized_label}")
+            display_start = time.time()  # 记录开始显示文字的时间
+            mp_draw.draw_landmarks(img, lm, mp_hands.HAND_CONNECTIONS)
+
+        # 如果已经识别到手势，则持续在窗口中显示 1 秒
+        if recognized_label is not None:
+            cv2.putText(img,
+                        recognized_label,
+                        (10, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        2,
+                        (0, 255, 0),
+                        3)
+            # 显示超过 1 秒后退出
+            if time.time() - display_start > 1.0:
+                break
+
+        cv2.imshow('Gesture Recognition', img)
+        # 按 Esc 也可以提前退出
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+
+    # 释放资源
+    cap.release()
+    cv2.destroyAllWindows()
+    return {'gesture': recognized_label}
 
 if __name__ == "__main__":
     import uvicorn

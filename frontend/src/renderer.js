@@ -121,24 +121,70 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
   }
 })
 
-const videoBtn = document.getElementById('videoBtn');
-if (videoBtn) {
-    videoBtn.addEventListener('click', async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const track = stream.getVideoTracks()[0];
-            track.stop();
+async function processVideo() {
+  try {
+      // // 1. 请求摄像头权限并立即停止，检测可用性
+      // const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // const track = stream.getVideoTracks()[0];
+      // track.stop();
 
-            const response = await fetch('http://localhost:8000/api/process-video', { method: 'POST' });
-            if (!response.ok) throw await response.json();
+      // 2. 向后端发起 POST 请求
+      const response = await fetch('http://localhost:8000/api/process-video', { method: 'POST' });
+      if (!response.ok) {
+          // 如果状态码不是 2xx，抛出后台返回的 JSON 作为错误
+          throw await response.json();
+      }
+      const data = await response.json();
 
-            const data = await response.json();
-            if (data.warning) {
-                alert('请集中注意力！');
-            }
-        } catch (err) {
-            console.error('视频处理错误:', err);
-            alert('视频处理失败: ' + (err.detail || '服务器错误'));
-        }
-    });
+      // 3. 根据返回结果给出提示
+      if (data.warning) {
+          alert('请集中注意力！');
+      }
+  } catch (err) {
+      console.error('视频处理错误:', err);
+      alert('视频处理失败: ' + (err.detail || '服务器错误'));
+  }
 }
+
+
+async function processGesture() {
+  try {
+      // // 1. 请求摄像头权限并立即停止，检测可用性
+      // const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // const track = stream.getVideoTracks()[0];
+      // track.stop();
+
+      // 2. 向后端发起 POST 请求
+      const response = await fetch('http://localhost:8000/api/process-gesture', { method: 'POST' });
+      if (!response.ok) {
+          // 如果状态码不是 2xx，抛出后台返回的 JSON 作为错误
+          throw await response.json();
+      }
+      const data = await response.json();
+
+      // 3. 根据返回结果给出提示
+      
+      if (data.gesture) {
+          switch (data.gesture) {
+               case 'fist':
+                  alert('检测到拳！');
+                  break;
+              case 'OK':
+                  alert('检测到ok！');
+                  break;
+              case 'thumbs_up':
+                  alert('检测到赞！');
+                  break; 
+              case 'palm':
+                  alert('检测到手展开！');
+                  break;
+          }
+      }
+  } catch (err) {
+      console.error('手势处理错误:', err);
+      alert('手势处理失败: ' + (err.detail || '服务器错误'));
+  }
+}
+
+
+

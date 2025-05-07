@@ -10,6 +10,8 @@ import cv2
 import numpy as np
 import joblib
 import mediapipe as mp
+from flask import Flask, jsonify, request
+import pygame
 
 class HeadShakeDetector:
     def __init__(self, shake_threshold=15, buffer_len=10):
@@ -87,6 +89,9 @@ model = whisper.load_model("turbo")
 # 初始化语音引擎
 engine = pyttsx3.init()
 
+
+pygame.mixer.init()
+
 # 硬编码用户数据
 users = [
     {"username": "admin", "password": "admin123", "role": "admin"},
@@ -137,15 +142,36 @@ async def speech_to_text(audio: UploadFile = File(...)) -> Dict[str, str]:
         }
         
         # 使用Whisper进行语音识别
-        result = model.transcribe(tmp_path, language='zh', **default_options)
+        result = model.transcribe(tmp_path, language='zh')
         os.unlink(tmp_path)  # 删除临时文件
         
-        # 定义指令映射字典
         command_mapping = {
             "打开空调": "已经打开空调",
             "关闭空调": "已经关闭空调",
-            "调高温度": "已经调高温度",
-            "调低温度": "已经调低温度"
+            "把温度调高": "已经调高温度",
+            "调低温度": "已经调低温度",
+            "把风速调到中档": "风速已调至中档",
+            "最大风速": "已将风速调至最大档位",
+            "把风向调到吹向前排": "风向已调整为前排吹风模式",
+            "打开内循环": "已切换到内循环模式",
+            "切换外循环": "已切换到外循环模式",
+            "开启前挡风玻璃除雾": "前挡除雾功能已启动",
+            "关闭后挡风玻璃除雾": "已关闭后挡除雾",
+            "打开司机座椅加热": "司机座椅加热已开启",
+            "关闭副驾驶座椅加热": "已关闭副驾驶座椅加热",
+            "播放音乐": "为您播放默认播放列表",
+            "播放周杰伦的歌": "正在播放周杰伦的热门歌曲",
+            "暂停音乐": "音乐播放已暂停",
+            "下一首歌": "已切换到下一首歌曲",
+            "上一首歌": "已播放上一首歌曲",
+            "导航到最近的加油站": "已规划到最近加油站的路线，开始导航",
+            "取消导航": "导航已取消",
+            "查询剩余油量": "当前油箱剩余约40%",
+            "打开左后车窗": "左后车窗已打开",
+            "关闭所有车窗": "所有车窗已关闭并锁定",
+            "检查胎压": "所有轮胎胎压正常，前轮36 PSI，后轮35 PSI",
+            "切换到运动模式": "已切换至运动模式",
+            "切换到舒适模式": "已切换至舒适模式"
         }
         
         # 检查识别结果是否匹配预设指令
@@ -288,12 +314,33 @@ async def process_gesture():
         # 释放资源
         cap.release()
         cv2.destroyAllWindows()
+        
+        # 当手势为 fist 时，停止播放音乐
+        if recognized_label == 'fist':
+            pygame.mixer.music.stop()
         return {'gesture': recognized_label}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"手势识别错误: {str(e)}")
 
+@app.post('/api/play_music')
+async def play_music():
+    music_path = r'audio\song.mp3'
+    pygame.mixer.music.load(music_path)  # 加载音乐
+    pygame.mixer.music.play()
+    return {'status': 'success'}
+
+
+@app.post('/api/stop_music')
+async def stop_music():
+    pygame.mixer.music.stop()
+    return {'status': 'success'}
 # ============= 应用启动 =============
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+
+

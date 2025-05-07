@@ -188,3 +188,51 @@ async function processGesture() {
 
 
 
+
+// 假设后端运行在本地的5000端口
+const backendUrl = 'http://localhost:8000/api';
+
+// 更新播放按钮点击事件
+document.getElementById('playPauseBtn').addEventListener('click', async () => {
+    try {
+        const response = await fetch(`${backendUrl}/play_music`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'success') {
+            document.getElementById('playPauseBtn').textContent = '⏸';
+            console.log('音乐播放成功');
+        }
+    } catch (error) {
+        console.error('播放音乐失败:', error);
+    }
+});
+
+// // 更新暂停按钮点击事件
+// // 这里假设原按钮功能已调整为暂停功能
+// // 若原按钮为切换播放/暂停，需根据逻辑调整
+// document.getElementById('playPauseBtn').addEventListener('click', async () => {
+//     try {
+//         const response = await fetch(`${backendUrl}/pause_music`, { method: 'POST' });
+//         const data = await response.json();
+//         if (data.status === 'success') {
+//             console.log('音乐暂停成功');
+//         }
+//     } catch (error) {
+//         console.error('暂停音乐失败:', error);
+//     }
+// });
+
+// 更新停止按钮点击事件
+document.getElementById('stopBtn').addEventListener('click', async () => {
+    try {
+        const response = await fetch(`${backendUrl}/stop_music`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'success') {
+            console.log('音乐停止成功');
+        }
+    } catch (error) {
+        console.error('停止音乐失败:', error);
+    }
+});
+
+
+

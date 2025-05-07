@@ -37,7 +37,7 @@ async function toggleRecording() {
           if (!response.ok) throw await response.json();
           
           const { text } = await response.json();
-          document.getElementById('textInput').value = text;
+          alert(text);
         } catch (err) {
           console.error('语音识别错误:', err);
           alert('语音识别失败: ' + (err.detail || '服务器错误'));
@@ -161,13 +161,17 @@ async function processGesture() {
           throw await response.json();
       }
       const data = await response.json();
+      
+      const audio   = document.getElementById('audioTrack');
+      const stopBtn = document.getElementById('stopBtn');
 
       // 3. 根据返回结果给出提示
       
       if (data.gesture) {
           switch (data.gesture) {
                case 'fist':
-                  alert('检测到拳！');
+                  stopBtn.click();
+                  alert('检测到拳，音乐停止！');
                   break;
               case 'OK':
                   alert('检测到ok！');
@@ -185,54 +189,4 @@ async function processGesture() {
       alert('手势处理失败: ' + (err.detail || '服务器错误'));
   }
 }
-
-
-
-
-// 假设后端运行在本地的5000端口
-const backendUrl = 'http://localhost:8000/api';
-
-// 更新播放按钮点击事件
-document.getElementById('playPauseBtn').addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${backendUrl}/play_music`, { method: 'POST' });
-        const data = await response.json();
-        if (data.status === 'success') {
-            document.getElementById('playPauseBtn').textContent = '⏸';
-            console.log('音乐播放成功');
-        }
-    } catch (error) {
-        console.error('播放音乐失败:', error);
-    }
-});
-
-// // 更新暂停按钮点击事件
-// // 这里假设原按钮功能已调整为暂停功能
-// // 若原按钮为切换播放/暂停，需根据逻辑调整
-// document.getElementById('playPauseBtn').addEventListener('click', async () => {
-//     try {
-//         const response = await fetch(`${backendUrl}/pause_music`, { method: 'POST' });
-//         const data = await response.json();
-//         if (data.status === 'success') {
-//             console.log('音乐暂停成功');
-//         }
-//     } catch (error) {
-//         console.error('暂停音乐失败:', error);
-//     }
-// });
-
-// 更新停止按钮点击事件
-document.getElementById('stopBtn').addEventListener('click', async () => {
-    try {
-        const response = await fetch(`${backendUrl}/stop_music`, { method: 'POST' });
-        const data = await response.json();
-        if (data.status === 'success') {
-            console.log('音乐停止成功');
-        }
-    } catch (error) {
-        console.error('停止音乐失败:', error);
-    }
-});
-
-
 

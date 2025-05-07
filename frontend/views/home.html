@@ -209,6 +209,66 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* 音符图标及旋转动画 */
+        .music-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .music-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .music-icon.rotating {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .music-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .music-controls button {
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: box-shadow 0.3s, transform 0.2s;
+        }
+
+        .music-controls button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(123, 97, 255, 0.5);
+        }
+        /* 播放列表控制按钮 */
+        .music-controls button.prev,
+        .music-controls button.next {
+        background: none;
+        font-size: 1.5rem;
+        padding: 0.5rem;
+        }
+        .music-controls button.prev:hover,
+        .music-controls button.next:hover {
+        transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -236,13 +296,29 @@
 
         <div class="response-card">
             <div class="neon-header">
-                <h3>🎵 音乐播放模块</h3>
+              <h3>🎵 音乐播放</h3>
             </div>
-            <div class="response-content" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
-                <button id="playPauseBtn" class="submit-btn">▶️ 播放</button>
-                <button id="stopBtn" class="submit-btn">⏹ 停止</button>
+            <div class="response-content">
+              <div class="music-player">
+                <!-- 隐藏的音频元素，src 指向你的音乐文件 -->
+                <audio id="audioTrack" src="D:\software\backend\audio\song.mp3"></audio>
+          
+                <!-- 中心音符图标，点击它也能切换播放/暂停 -->
+                <div id="musicIcon" class="music-icon">🎶</div>
+          
+                <!-- 播放/暂停 & 停止 控件 -->
+                <div class="music-controls">
+                    <button class="prev" id="prevBtn">⏮️</button>
+                    <button id="playPauseBtn">
+                      <span id="ppIcon">▶️</span>
+                      <span id="ppText">播放</span>
+                    </button>
+                    <button class="next" id="nextBtn">⏭️</button>
+                    <button id="stopBtn">⏹️</button>
+                </div>
+              </div>
             </div>
-        </div>
+          </div>
     </div>
 
     <div class="status-indicator">
@@ -251,9 +327,88 @@
     </div>
 <script src="../src/renderer.js"></script>
 <script>
-  document.getElementById('voiceBtn').addEventListener('click', toggleRecording);
-  document.getElementById('videoBtn').addEventListener('click', processVideo);
-  document.getElementById('gestureBtn').addEventListener('click', processGesture);
+    document.getElementById('voiceBtn').addEventListener('click', toggleRecording);
+    document.getElementById('videoBtn').addEventListener('click', processVideo);
+    document.getElementById('gestureBtn').addEventListener('click', processGesture);
+
+    const audio    = document.getElementById('audioTrack');
+    const icon     = document.getElementById('musicIcon');
+    const playBtn  = document.getElementById('playPauseBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const ppIcon   = document.getElementById('ppIcon');
+    const ppText   = document.getElementById('ppText');
+
+    const playlist = [
+        "../../backend/audio/song.mp3",
+        "../../backend/audio/song1.mp3"
+        // …根据需要继续添加
+    ];
+    let currentIndex = 0;
+
+    // 2. 加载指定索引的音轨
+    function loadTrack(index) {
+    // 索引越界处理：循环播放
+    if (index < 0) index = playlist.length - 1;
+    if (index >= playlist.length) index = 0;
+    currentIndex = index;
+
+    audio.src = playlist[currentIndex];
+    audio.currentTime = 0;
+    updateUI(false);    // 重置按钮和图标
+    }
+
+    // 3. “上一首”“下一首”按钮
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    prevBtn.addEventListener('click', () => {
+    loadTrack(currentIndex - 1);
+    audio.play();
+    updateUI(true);
+    });
+
+    nextBtn.addEventListener('click', () => {
+    loadTrack(currentIndex + 1);
+    audio.play();
+    updateUI(true);
+    });
+
+    // 4. 初始加载第一首
+    loadTrack(currentIndex);
+
+    function updateUI(isPlaying) {
+        if (isPlaying) {
+        icon.classList.add('rotating');
+        ppIcon.textContent = '⏸️';
+        ppText.textContent = '暂停';
+        } else {
+        icon.classList.remove('rotating');
+        ppIcon.textContent = '▶️';
+        ppText.textContent = '播放';
+        }
+    }
+
+    playBtn.addEventListener('click', () => {
+        if (audio.paused) {
+        audio.play();
+        updateUI(true);
+        } else {
+        audio.pause();
+        updateUI(false);
+        }
+    });
+
+    // 点击音符也能切换播放/暂停
+    icon.addEventListener('click', () => playBtn.click());
+
+    stopBtn.addEventListener('click', () => {
+        audio.pause();
+        audio.currentTime = 0;
+        updateUI(false);
+    });
+
+    // 当音乐自然结束时，恢复图标状态
+    audio.addEventListener('ended', () => updateUI(false));
 </script>
 </body>
 </html>

@@ -3,6 +3,7 @@ import time
 import tempfile
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import Depends
 from pydantic import BaseModel
 import whisper
 import pyttsx3
@@ -11,7 +12,11 @@ import numpy as np
 import joblib
 import mediapipe as mp
 from flask import Flask, jsonify, request
-import pygame
+from pydantic import BaseModel, Field
+from sqlalchemy import Column, Integer, String, DateTime, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from datetime import datetime
 
 class HeadShakeDetector:
     def __init__(self, shake_threshold=15, buffer_len=10):
@@ -67,9 +72,26 @@ class HeadShakeDetector:
         cv2.putText(image, f"Status: {status}", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
         
         return shake_detected, image
-        
+
+
+# 数据库配置（MySQL）
+# 请替换 user、password、host、port、dbname 为你的 MySQL 信息
+DATABASE_URL = "mysql+pymysql://root:Aaa041082@localhost:3306/software"
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# SQLAlchemy 用户模型
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    password = Column(String(255), nullable=False)  # 明文存储
+    role = Column(String(20), nullable=False, default="user")
+
+# Pydantic 模式
 class UserLogin(BaseModel):
-    username: str
+    username: str = Field(..., max_length=50)
     password: str
 
 class UserRegister(UserLogin):
@@ -90,36 +112,39 @@ model = whisper.load_model("turbo")
 engine = pyttsx3.init()
 
 
-pygame.mixer.init()
+# 依赖项：获取 DB 会话
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# 硬编码用户数据
-users = [
-    {"username": "admin", "password": "admin123", "role": "admin"},
-    {"username": "user1", "password": "user123", "role": "user"}
-]
+
 
 # ============= API路由定义 =============
 
+# API 路由：登录
 @app.post("/api/login")
-async def login(user: UserLogin):
-    for u in users:
-        if u["username"] == user.username and u["password"] == user.password:
-            return {"role": u["role"]}
-    raise HTTPException(status_code=401, detail="用户名或密码错误")
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if not db_user or db_user.password != user.password:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    print(f"用户 {user.username} 登录成功")
+    return {"role": db_user.role}
 
+# API 路由：注册
 @app.post("/api/register")
-async def register(user: UserRegister):
+async def register(user: UserRegister, db: Session = Depends(get_db)):
     if user.password != user.confirm_password:
         raise HTTPException(status_code=400, detail="密码不一致")
-    
-    if any(u["username"] == user.username for u in users):
+    if db.query(User).filter(User.username == user.username).first():
         raise HTTPException(status_code=400, detail="用户名已存在")
-    
-    users.append({
-        "username": user.username,
-        "password": user.password,
-        "role": "user"
-    })
+
+    new_user = User(username=user.username, password=user.password, role="user")
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return {"message": "注册成功"}
 
 @app.post("/api/speech-to-text")
@@ -142,7 +167,7 @@ async def speech_to_text(audio: UploadFile = File(...)) -> Dict[str, str]:
         }
         
         # 使用Whisper进行语音识别
-        result = model.transcribe(tmp_path, language='zh')
+        result = model.transcribe(tmp_path, language='zh', **default_options)
         os.unlink(tmp_path)  # 删除临时文件
         
         command_mapping = {
@@ -235,6 +260,7 @@ async def process_video():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"视频处理错误: {str(e)}")
 
+
 @app.post('/api/process-gesture')
 async def process_gesture():
     """
@@ -314,26 +340,10 @@ async def process_gesture():
         # 释放资源
         cap.release()
         cv2.destroyAllWindows()
-        
-        # 当手势为 fist 时，停止播放音乐
-        if recognized_label == 'fist':
-            pygame.mixer.music.stop()
         return {'gesture': recognized_label}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"手势识别错误: {str(e)}")
 
-@app.post('/api/play_music')
-async def play_music():
-    music_path = r'audio\song.mp3'
-    pygame.mixer.music.load(music_path)  # 加载音乐
-    pygame.mixer.music.play()
-    return {'status': 'success'}
-
-
-@app.post('/api/stop_music')
-async def stop_music():
-    pygame.mixer.music.stop()
-    return {'status': 'success'}
 # ============= 应用启动 =============
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能交互中心 | NeuroDrive</title>
     <style>
         :root {
@@ -9,266 +10,54 @@
             --secondary: #7b61ff;
             --bg: #0a0e1a;
             --card-bg: rgba(15, 22, 45, 0.9);
+            --accent: #ffcc00;
+            --text-soft: rgba(255,255,255,0.7);
         }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+        body { background: var(--bg); color: #fff; min-height:100vh; display:flex; flex-direction:column; }
+        /* 顶部导航 */
+        .main-nav { display:flex; align-items:center; justify-between:space-between; padding:1rem 2rem; background:rgba(10,14,26,0.95); backdrop-filter: blur(6px); }
+        .main-nav h2 { font-size:1.8rem; background:linear-gradient(45deg,var(--primary),var(--secondary)); -webkit-text-fill-color:transparent; -webkit-background-clip:text; }
+        .user-info { position:absolute; top:50%; right:2rem; transform: translateY(-50%); display:flex; gap:1rem; align-items:center; font-size:0.9rem; }
+        #logout { background: rgba(255,50,50,0.15); color:#ff3232; border:1px solid #ff3232; padding:0.4rem 1rem; border-radius:20px; cursor:pointer; transition:0.3s; }
+        #logout:hover { background:#ff3232; color:#fff; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui;
-        }
+        /* 主内容布局 */
+        .container { flex:1; display:grid; grid-template-columns:250px 1fr; }
+        /* 侧边栏 */
+        .sidebar { background:rgba(15,22,45,0.95); padding:1.5rem; display:flex; flex-direction:column; gap:1.5rem; border-right:1px solid rgba(123,97,255,0.2); }
+        .sidebar button { background:none; border:none; text-align:left; padding:0.8rem; font-size:1rem; color:var(--text-soft); border-radius:8px; cursor:pointer; transition:background 0.3s; }
+        .sidebar button:hover, .sidebar button.active { background:rgba(0,247,255,0.1); color:#fff; }
 
-        body {
-            background: var(--bg);
-            color: #fff;
-            min-height: 100vh;
-        }
+        /* 内容卡片 */
+        .content { padding:2rem; overflow:auto; }
+        .card { background:var(--card-bg); border-radius:15px; padding:1.5rem; margin-bottom:2rem; border:1px solid rgba(123,97,255,0.2); position:relative; overflow:hidden; }
+        .card::before { content:''; position:absolute; inset:-2px; background:linear-gradient(45deg,var(--primary),var(--secondary)); z-index:-1; animation:borderFlow 5s linear infinite; }
+        @keyframes borderFlow { 0%{transform:translateX(-100%);}100%{transform:translateX(100%);} }
+        .neon-header h3 { font-size:1.4rem; color:var(--primary); text-shadow:0 0 8px rgba(0,247,255,0.5); margin-bottom:1rem; }
 
-        .main-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 3rem;
-            background: rgba(10, 14, 26, 0.95);
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1);
-            position: relative;
-        }
+        /* 输入区 */
+        .input-section { display:flex; flex-direction:column; gap:1rem; }
+        .voice-btn { background:linear-gradient(45deg,var(--primary),var(--secondary)); border:none; padding:0.8rem 1.5rem; border-radius:20px; color:#fff; cursor:pointer; display:flex; align-items:center; gap:0.5rem; transition:transform 0.3s; }
+        .voice-btn:hover { transform:scale(1.05); }
+        #textInput { background:rgba(255,255,255,0.05); border:1px solid rgba(0,247,255,0.3); border-radius:10px; padding:1rem; color:#fff; min-height:120px; resize:vertical; }
+        .submit-btn { background:linear-gradient(45deg,var(--secondary),var(--primary)); border:none; padding:0.8rem 1.8rem; border-radius:8px; align-self:flex-end; cursor:pointer; transition:0.3s; }
+        .submit-btn:hover { box-shadow:0 0 10px rgba(123,97,255,0.5); }
 
-        .main-nav h2 {
-            font-size: 1.8rem;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
-        }
+        /* 播放音乐 */
+        .music-player { display:flex; flex-direction:column; align-items:center; gap:1rem; }
+        .music-icon { font-size:3.5rem; color:var(--accent); text-shadow:0 0 15px rgba(255,204,0,0.4); cursor:pointer; transition:transform 0.3s; }
+        .music-icon.rotating { animation:spin 2s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg);} }
+        .music-controls { display:flex; gap:0.8rem; }
+        .music-controls button { background:linear-gradient(45deg,var(--secondary),var(--primary)); border:none; padding:0.6rem 1.2rem; border-radius:8px; display:flex; align-items:center; gap:0.4rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.3s; }
+        .music-controls button:hover { transform:scale(1.1); box-shadow:0 0 10px rgba(123,97,255,0.5); }
+        .music-controls .prev, .music-controls .next { background:none; font-size:1.2rem; padding:0.4rem; }
 
-        .user-info {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        #logout {
-            background: rgba(255, 50, 50, 0.15);
-            color: #ff3232;
-            border: 1px solid #ff3232;
-            padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        #logout:hover {
-            background: #ff3232;
-            color: white;
-        }
-
-        .content-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            padding: 2rem;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        .input-card, .response-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(123, 97, 255, 0.2);
-        }
-
-        .input-card::before, .response-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            z-index: -1;
-            animation: borderFlow 6s linear infinite;
-        }
-
-        @keyframes borderFlow {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .neon-header {
-            margin-bottom: 2rem;
-            position: relative;
-        }
-
-        .neon-header h3 {
-            font-size: 1.5rem;
-            color: var(--primary);
-            text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
-        }
-
-        .input-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .voice-btn {
-            align-self: flex-start;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 30px;
-            color: white;
-            cursor: pointer;
-            transition: transform 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .voice-btn:hover {
-            transform: scale(1.05);
-        }
-
-        #textInput {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 247, 255, 0.3);
-            border-radius: 10px;
-            padding: 1.5rem;
-            color: white;
-            min-height: 150px;
-            resize: vertical;
-        }
-
-        .submit-btn {
-            background: linear-gradient(45deg, var(--secondary), var(--primary));
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-            align-self: flex-end;
-        }
-
-        .submit-btn:hover {
-            opacity: 0.9;
-            box-shadow: 0 0 15px rgba(123, 97, 255, 0.5);
-        }
-
-        .response-content {
-            min-height: 400px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 1.5rem;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
-        /* 新增元素 - 状态指示灯 */
-        .status-indicator {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .status-led {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #0f0;
-            box-shadow: 0 0 10px #0f0;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-
-        /* 加载动画 */
-        .loader {
-            display: none;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 1rem auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 音符图标及旋转动画 */
-        .music-player {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .music-icon {
-            font-size: 4rem;
-            color: var(--primary);
-            text-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .music-icon.rotating {
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0%   { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .music-controls {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .music-controls button {
-            background: linear-gradient(45deg, var(--secondary), var(--primary));
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            font-size: 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: box-shadow 0.3s, transform 0.2s;
-        }
-
-        .music-controls button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 10px rgba(123, 97, 255, 0.5);
-        }
-        /* 播放列表控制按钮 */
-        .music-controls button.prev,
-        .music-controls button.next {
-        background: none;
-        font-size: 1.5rem;
-        padding: 0.5rem;
-        }
-        .music-controls button.prev:hover,
-        .music-controls button.next:hover {
-        transform: scale(1.2);
-        }
+        /* 状态指示 */
+        .status-indicator { position:fixed; bottom:1.5rem; right:1.5rem; display:flex; align-items:center; gap:0.5rem; background:rgba(10,14,26,0.8); padding:0.5rem 1rem; border-radius:20px; }
+        .status-led { width:10px; height:10px; border-radius:50%; background:#0f0; box-shadow:0 0 8px #0f0; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:0.6;}50%{opacity:1;} }
     </style>
 </head>
 <body>
@@ -279,53 +68,57 @@
             <button id="logout">安全退出</button>
         </div>
     </nav>
-
-    <div class="content-container">
-        <div class="input-card">
-            <div class="neon-header">
-                <h3>🌌 多模态交互接口</h3>
-            </div>
-            <div class="input-section">
-                <button class="voice-btn" id="voiceBtn">🎤 语音指令输入</button>
-                <button class="voice-btn" id="videoBtn">🎥 视频指令输入</button>
-                <button class="voice-btn" id="gestureBtn">👋 手势指令输入</button>
-                <textarea id="textInput" placeholder="输入文字指令或自然语言查询..."></textarea>
-                <button class="submit-btn">🚀 发送指令</button>
-            </div>
-        </div>
-
-        <div class="response-card">
-            <div class="neon-header">
-              <h3>🎵 音乐播放</h3>
-            </div>
-            <div class="response-content">
-              <div class="music-player">
-                <!-- 隐藏的音频元素，src 指向你的音乐文件 -->
-                <audio id="audioTrack" src="D:\software\backend\audio\song.mp3"></audio>
-          
-                <!-- 中心音符图标，点击它也能切换播放/暂停 -->
-                <div id="musicIcon" class="music-icon">🎶</div>
-          
-                <!-- 播放/暂停 & 停止 控件 -->
-                <div class="music-controls">
-                    <button class="prev" id="prevBtn">⏮️</button>
-                    <button id="playPauseBtn">
-                      <span id="ppIcon">▶️</span>
-                      <span id="ppText">播放</span>
-                    </button>
-                    <button class="next" id="nextBtn">⏭️</button>
-                    <button id="stopBtn">⏹️</button>
+    <div class="container">
+        <aside class="sidebar">
+            <button class="active" id="navMultimodal">多模态交互</button>
+            <button id="navMusic">音乐播放</button>
+            <button id="navSettings">系统设置</button>
+        </aside>
+        <section class="content">
+            <!-- 多模态交互面板 -->
+            <div id="panelMultimodal" class="card">
+                <div class="neon-header"><h3>🌌 多模态交互接口</h3></div>
+                <div class="input-section">
+                    <button class="voice-btn" id="voiceBtn">🎤 语音指令输入</button>
+                    <button class="voice-btn" id="videoBtn">🎥 视频指令输入</button>
+                    <button class="voice-btn" id="gestureBtn">👋 手势指令输入</button>
+                    <textarea id="textInput" placeholder="输入文字指令或自然语言查询..."></textarea>
+                    <button class="submit-btn" id="submitBtn">🚀 发送指令</button>
                 </div>
-              </div>
             </div>
-          </div>
+            <!-- 音乐播放面板 -->
+            <div id="panelMusic" class="card" style="display:none;">
+                <div class="neon-header"><h3>🎵 音乐播放</h3></div>
+                <div class="music-player">
+                    <audio id="audioTrack" src="song1.mp3"></audio>
+                    <div id="musicIcon" class="music-icon">🎶</div>
+                    <div class="music-controls">
+                        <button class="prev" id="prevBtn">⏮️</button>
+                        <button id="playPauseBtn"><span id="ppIcon">▶️</span><span id="ppText">播放</span></button>
+                        <button class="next" id="nextBtn">⏭️</button>
+                        <button id="stopBtn">⏹️</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
-
-    <div class="status-indicator">
-        <div class="status-led"></div>
-        <span>系统连接正常</span>
-    </div>
+    <div class="status-indicator"><div class="status-led"></div><span>系统连接正常</span></div>
 <script src="../src/renderer.js"></script>
+<script>
+    // 标签切换逻辑
+    const navBtns = document.querySelectorAll('.sidebar button');
+    const panels = { multimodal: document.getElementById('panelMultimodal'), music: document.getElementById('panelMusic') };
+    navBtns.forEach(btn => btn.addEventListener('click', ()=>{
+        navBtns.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        // 隐藏所有面板
+        panels.multimodal.style.display='none';
+        panels.music.style.display='none';
+        // 根据按钮显示
+        if(btn.id==='navMultimodal') panels.multimodal.style.display='block';
+        if(btn.id==='navMusic') panels.music.style.display='block';
+    }));
+</script>
 <script>
     document.getElementById('voiceBtn').addEventListener('click', toggleRecording);
     document.getElementById('videoBtn').addEventListener('click', processVideo);

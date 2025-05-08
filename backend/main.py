@@ -343,6 +343,14 @@ async def process_gesture():
         return {'gesture': recognized_label}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"手势识别错误: {str(e)}")
+    
+@app.post("/api/users")
+async def get_users(db: Session = Depends(get_db)):
+    """
+    获取所有用户信息
+    """
+    users = db.query(User).all()
+    return [{"id": user.id, "username": user.username, "role": user.role} for user in users]
 
 # ============= 应用启动 =============
 

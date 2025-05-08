@@ -197,8 +197,8 @@
     <nav class="main-nav">
         <h2>🔐 NeuroDrive 管理控制台</h2>
         <div class="user-info">
-            <span id="adminUser">管理员: system@neurodrive.ai</span>
-            <button id="adminLogout">⏻ 安全注销</button>
+            <span id="adminUser">管理员</span>
+            <button id="adminLogout">⏻ 安全退出</button>
         </div>
     </nav>
 
@@ -227,35 +227,98 @@
                 <thead>
                     <tr>
                         <th>用户名</th>
-                        <th>角色权限</th>
-                        <th>操作控制</th>
+                        <th>用户角色</th>
+                        <th>操作</th> 
                     </tr>
                 </thead>
                 <tbody id="userList">
-                    <!-- 示例数据 -->
-                    <tr>
-                        <td>admin@neurodrive.ai</td>
-                        <td><span class="role-tag">超级管理员</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-edit">✏️ 编辑</button>
-                                <button class="btn-delete">🗑️ 删除</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>audit@neurodrive.ai</td>
-                        <td><span class="role-tag">审计员</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-edit">✏️ 编辑</button>
-                                <button class="btn-delete">🗑️ 删除</button>
-                            </div>
-                        </td>
-                    </tr>
+                    <!-- JS 会在这里插入 <tr>…</tr> -->
                 </tbody>
             </table>
         </div>
     </div>
+    <script>
+        async function loadUsers() {
+          try {
+            // 1) 用 POST 请求获取用户列表
+            const res = await fetch('http://localhost:8000/api/users', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              // 后端接口不需要请求体的话，这里可以省略 body
+              // body: JSON.stringify({})
+            });
+            if (!res.ok) throw new Error('网络错误: ' + res.status);
+            const users = await res.json();
+      
+            // 2) 渲染到表格
+            const tbody = document.getElementById('userList');
+            tbody.innerHTML = '';  // 清空当前内容
+      
+            users.forEach(user => {
+              const tr = document.createElement('tr');
+      
+              // 用户名列
+              const tdName = document.createElement('td');
+              tdName.textContent = user.username;
+              tr.appendChild(tdName);
+      
+              // 角色列
+              const tdRole = document.createElement('td');
+              const span = document.createElement('span');
+              span.classList.add('role-tag');
+              span.textContent = user.role;
+              tdRole.appendChild(span);
+              tr.appendChild(tdRole);
+      
+              // 操作列（可通过 data-id 获取 user.id 进行编辑/删除）
+              const tdAct = document.createElement('td');
+              tdAct.innerHTML = `
+                <div class="action-buttons" data-id="${user.id}">
+                  <button class="btn-edit">✏️ 编辑</button>
+                  <button class="btn-delete">🗑️ 删除</button>
+                </div>`;
+              tr.appendChild(tdAct);
+      
+              tbody.appendChild(tr);
+            });
+      
+            // 3) 可选：给编辑/删除按钮绑定事件
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+              btn.addEventListener('click', e => {
+                const id = e.currentTarget.closest('.action-buttons').dataset.id;
+                // TODO: 跳转到编辑页或弹出编辑框
+                window.location.href = `/users/${id}/edit`;
+              });
+            });
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+              btn.addEventListener('click', async e => {
+                const id = e.currentTarget.closest('.action-buttons').dataset.id;
+                if (!confirm('确定要删除此用户？')) return;
+                try {
+                  const delRes = await fetch(`/api/users/${id}`, {
+                    method: 'DELETE'
+                  });
+                  if (!delRes.ok) throw new Error('删除失败');
+                  // 删除成功后，重新加载列表
+                  loadUsers();
+                } catch (err) {
+                  console.error(err);
+                  alert('删除出错：' + err.message);
+                }
+              });
+            });
+      
+          } catch (err) {
+            console.error('加载用户失败：', err);
+          }
+        }
+      
+        document.addEventListener('DOMContentLoaded', loadUsers);
+        document.getElementById("adminLogout").addEventListener("click", function() {
+        window.location.href = "login.html"; // 替换成你的退出地址
+    });
+    </script>  
 </body>
 </html>

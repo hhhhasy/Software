@@ -330,6 +330,9 @@
     document.getElementById('voiceBtn').addEventListener('click', toggleRecording);
     document.getElementById('videoBtn').addEventListener('click', processVideo);
     document.getElementById('gestureBtn').addEventListener('click', processGesture);
+    document.getElementById("logout").addEventListener("click", function() {
+        window.location.href = "login.html"; // 替换成你的退出地址
+    });
 
     const audio    = document.getElementById('audioTrack');
     const icon     = document.getElementById('musicIcon');

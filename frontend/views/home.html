@@ -58,6 +58,91 @@
         .status-indicator { position:fixed; bottom:1.5rem; right:1.5rem; display:flex; align-items:center; gap:0.5rem; background:rgba(10,14,26,0.8); padding:0.5rem 1rem; border-radius:20px; }
         .status-led { width:10px; height:10px; border-radius:50%; background:#0f0; box-shadow:0 0 8px #0f0; animation:pulse 1.5s infinite; }
         @keyframes pulse { 0%,100%{opacity:0.6;}50%{opacity:1;} }
+
+        /* 容器布局 */
+        .driving-weather-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 行驶动画 */
+        .drive-animation {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        #carAnimation {
+            width: 60px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 5px;
+            position: absolute;
+            top: 57px;
+            left: 0;
+            animation: drive 3s linear infinite;
+        }
+        @keyframes drive {
+            0%   { left: 0; }
+            50%  { left: calc(100% - 60px); }
+            100% { left: 0; }
+        }
+
+        /* 天气卡 */
+        .weather-card {
+            background: rgba(15,22,45,0.9);
+            border: 1px solid rgba(123,97,255,0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .weather-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-soft);
+        }
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .weather-main img {
+            width: 48px;
+            height: 48px;
+        }
+        .weather-text .weather-temp {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        .weather-text .weather-desc {
+            font-size: 1rem;
+            color: var(--text-soft);
+        }
+
+        /* 底部状态格栅 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+            gap: 1rem;
+        }
+        .statusBox {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,247,255,0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 1.1rem;
+            color: #fff;
+            text-align: center;
+        }
+        .weather-icon { width: 80px; height:80px; }
     </style>
 </head>
 <body>
@@ -70,11 +155,44 @@
     </nav>
     <div class="container">
         <aside class="sidebar">
+            <button id="navDriving">行驶状态</button>
             <button class="active" id="navMultimodal">多模态交互</button>
             <button id="navMusic">音乐播放</button>
             <button id="navSettings">系统设置</button>
         </aside>
         <section class="content">
+            <!-- 行驶状态 + 天气 面板 -->
+            <!-- 内容区中，添加或替换为下面这个 panelDrivingStatus -->
+            <div id="panelDrivingStatus" class="card" style="display:none;">
+                <div class="neon-header"><h3>🚘 当前行驶状态 & 🌤 天气信息</h3></div>
+                <div class="driving-weather-grid">
+                <!-- 左：行驶动画 -->
+                <div class="drive-animation">
+                    <div id="carAnimation"></div>
+                </div>
+                <!-- 右：硬编码天气卡 -->
+                <div class="weather-card">
+                    <div class="weather-header">
+                    <span>天津</span>
+                    <span>2025-05-08</span>
+                    </div>
+                    <div class="weather-main">
+                    <img src="../../backend/image/sunny1.svg" alt="晴" class="weather-icon"/>
+                    <div class="weather-text">
+                        <div class="weather-temp">24°C</div>
+                        <div class="weather-desc">晴</div>
+                    </div>
+                    </div>
+                </div>
+                </div>
+                <!-- 底部状态指标 -->
+                <div class="status-grid">
+                <div class="statusBox">🌡️ 温度: <strong>85°C</strong></div>
+                <div class="statusBox">⛽ 油量: <strong>68%</strong></div>
+                <div class="statusBox">🚀 速度: <strong>72 km/h</strong></div>
+                <div class="statusBox">🔋 电压: <strong>13.5V</strong></div>
+                </div>
+            </div>
             <!-- 多模态交互面板 -->
             <div id="panelMultimodal" class="card">
                 <div class="neon-header"><h3>🌌 多模态交互接口</h3></div>
@@ -107,16 +225,21 @@
 <script>
     // 标签切换逻辑
     const navBtns = document.querySelectorAll('.sidebar button');
-    const panels = { multimodal: document.getElementById('panelMultimodal'), music: document.getElementById('panelMusic') };
-    navBtns.forEach(btn => btn.addEventListener('click', ()=>{
+    const panels = {
+        driving:   document.getElementById('panelDrivingStatus'),
+        multimodal:document.getElementById('panelMultimodal'),
+        music:     document.getElementById('panelMusic')
+    };
+
+    navBtns.forEach(btn => btn.addEventListener('click', ()=> {
         navBtns.forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
-        // 隐藏所有面板
-        panels.multimodal.style.display='none';
-        panels.music.style.display='none';
-        // 根据按钮显示
-        if(btn.id==='navMultimodal') panels.multimodal.style.display='block';
-        if(btn.id==='navMusic') panels.music.style.display='block';
+        // 隐藏所有
+        Object.values(panels).forEach(p=>p.style.display='none');
+        // 显示对应
+        if (btn.id==='navDriving')    panels.driving.style.display='block';
+        if (btn.id==='navMultimodal') panels.multimodal.style.display='block';
+        if (btn.id==='navMusic')      panels.music.style.display='block';
     }));
 </script>
 <script>

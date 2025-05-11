@@ -18,61 +18,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
 
-class HeadShakeDetector:
-    def __init__(self, shake_threshold=15, buffer_len=10):
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
-        )
-        self.shake_threshold = shake_threshold
-        self.buffer_len = buffer_len
-        self.yaw_buffer = []
-
-    def get_head_yaw(self, landmarks, image_shape):
-        """
-        计算头部的偏航角度
-        """
-        # 使用左右太阳穴点位置估计偏航角
-        left = landmarks[234]
-        right = landmarks[454]
-        dx = left.x - right.x
-        dy = left.y - right.y
-        angle = np.degrees(np.arctan2(dx, dy))
-        return angle
-    
-    def detect(self, image):
-        """
-        检测图像中是否有摇头行为
-        """
-        h, w = image.shape[:2]
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.face_mesh.process(rgb)
-        
-        if not results.multi_face_landmarks:
-            return False, image
-
-        lm = results.multi_face_landmarks[0].landmark
-        yaw = self.get_head_yaw(lm, (h, w))
-        
-        # 维护角度缓冲区
-        self.yaw_buffer.append(yaw)
-        if len(self.yaw_buffer) > self.buffer_len:
-            self.yaw_buffer.pop(0)
-
-        # 检测角度变化是否超过阈值
-        min_yaw, max_yaw = min(self.yaw_buffer), max(self.yaw_buffer)
-        shake_detected = (max_yaw - min_yaw) > self.shake_threshold
-
-        # 在图像上添加调试信息
-        cv2.putText(image, f"Yaw: {yaw:.1f}", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
-        status = "Shake" if shake_detected else "Still"
-        cv2.putText(image, f"Status: {status}", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
-        
-        return shake_detected, image
-
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
@@ -120,6 +65,14 @@ def get_db():
     finally:
         db.close()
 
+
+# 计算 EAR 的函数
+def compute_ear(eye_points, landmarks, img_w, img_h):
+    pts = [(int(landmarks[i].x * img_w), int(landmarks[i].y * img_h)) for i in eye_points]
+    A = np.linalg.norm(np.array(pts[1]) - np.array(pts[5]))
+    B = np.linalg.norm(np.array(pts[2]) - np.array(pts[4]))
+    C = np.linalg.norm(np.array(pts[0]) - np.array(pts[3]))
+    return (A + B) / (2.0 * C)
 
 
 # ============= API路由定义 =============
@@ -220,45 +173,160 @@ async def process_video():
     
     打开摄像头，实时监测驾驶员头部姿态
     """
-    try:
-        # 创建摇头检测器
-        detector = HeadShakeDetector(shake_threshold=15, buffer_len=15)
+    # -------------------- 初始化 MediaPipe Face Mesh --------------------
+    mp_face_mesh = mp.solutions.face_mesh
+    face_mesh = mp_face_mesh.FaceMesh(
+        refine_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    )
 
-        # 初始化摄像头
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            raise HTTPException(status_code=500, detail="无法访问摄像头")
-            
-        shake_detected = False
+    # -------------------- 打开摄像头 --------------------
+    cap = cv2.VideoCapture(0)
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+    # -------------------- 阈值和索引定义 --------------------
+    # 眼睛
+    LEFT_EYE_IDX  = [33, 160, 158, 133, 153, 144]
+    RIGHT_EYE_IDX = [263, 387, 385, 362, 380, 373]
+    EAR_THRESH = 0.25             # EAR 阈值
+    CLOSED_SEC_THRESHOLD = 5.0    # 闭眼超过 5 秒报警
 
-            shake, annotated_frame = detector.detect(frame)
-            cv2.imshow('Head Shake Detection', annotated_frame)
+    # 打哈欠
+    UPPER_LIP_IDX    = 13
+    LOWER_LIP_IDX    = 14
+    LEFT_MOUTH_IDX   = 78
+    RIGHT_MOUTH_IDX  = 308
+    YAWN_MAR_THRESH      = 0.5   # MAR 阈值
+    YAWN_FRAMES_THRESH   = 15    # 连续帧数阈值 (~0.5 秒 @30fps)
 
-            if shake:
-                print("🚨 检测到摇头行为！")
-                shake_detected = True
-                break
+    # 点头 / 摇头
+    nod_counter = 0
+    shake_counter = 0
+    NOD_THRESH_COUNT   = 5       # 连续 5 帧视为持续点头
+    SHAKE_THRESH_COUNT = 5       # 连续 5 帧视为持续摇头
+    PITCH_THRESH_DEG   = 10      # 俯仰角阈值（度）
+    YAW_THRESH_DEG     = 10      # 偏航角阈值（度）
 
-            if cv2.waitKey(1) & 0xFF == 27:  # ESC键退出
-                break
+    # 状态变量
+    eye_closed_start = None
+    yawn_frames = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-        cap.release()
-        cv2.destroyAllWindows()
+        frame = cv2.flip(frame, 1)
+        h, w = frame.shape[:2]
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb)
 
-        if shake_detected:
-            print("⚠️ 提示：请勿在驾驶时摇头晃脑！")
-            engine.say("请勿在驾驶时摇头晃脑！请集中注意力。")
-            engine.runAndWait()
-            return {'warning': '请集中注意力！'}
-        else:
-            return {'status': '正常'}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"视频处理错误: {str(e)}")
+        if results.multi_face_landmarks:
+            lm = results.multi_face_landmarks[0].landmark
+
+            # ----------- 1. 闭眼检测 -----------
+            left_ear  = compute_ear(LEFT_EYE_IDX, lm, w, h)
+            right_ear = compute_ear(RIGHT_EYE_IDX, lm, w, h)
+            ear = (left_ear + right_ear) / 2.0
+
+            if ear < EAR_THRESH:
+                if eye_closed_start is None:
+                    eye_closed_start = time.time()
+                else:
+                    elapsed = time.time() - eye_closed_start
+                    if elapsed >= CLOSED_SEC_THRESHOLD:
+                        engine.say("请注意，您已经闭眼超过5秒钟！")
+                        engine.runAndWait()
+                        
+                        
+            else:
+                eye_closed_start = None
+
+
+            # ----------- 2. 打哈欠检测 -----------
+            ul = np.array([lm[UPPER_LIP_IDX].x * w, lm[UPPER_LIP_IDX].y * h])
+            ll = np.array([lm[LOWER_LIP_IDX].x * w, lm[LOWER_LIP_IDX].y * h])
+            lm_pt = np.array([lm[LEFT_MOUTH_IDX].x * w, lm[LEFT_MOUTH_IDX].y * h])
+            rm_pt = np.array([lm[RIGHT_MOUTH_IDX].x * w, lm[RIGHT_MOUTH_IDX].y * h])
+
+            mar = np.linalg.norm(ul - ll) / np.linalg.norm(lm_pt - rm_pt)
+            if mar > YAWN_MAR_THRESH:
+                yawn_frames += 1
+            else:
+                yawn_frames = 0
+
+            if yawn_frames >= YAWN_FRAMES_THRESH:
+                engine.say("请注意，您正在打哈欠！")
+                engine.runAndWait()
+                
+            # ----------- 3. 点头/摇头检测 -----------
+            # 提取用于 PnP 的 2D/3D 点
+            face_2d, face_3d = [], []
+            for idx, lm_pt in enumerate(lm):
+                if idx in [1, 33, 263, 61, 291, 199]:
+                    x, y = int(lm_pt.x * w), int(lm_pt.y * h)
+                    if idx == 1:
+                        nose_2d = (x, y)
+                        nose_3d = np.array([x, y, lm_pt.z * 3000], dtype=np.float64)
+                    face_2d.append([x, y])
+                    face_3d.append([x, y, lm_pt.z])
+            face_2d = np.array(face_2d, dtype=np.float64)
+            face_3d = np.array(face_3d, dtype=np.float64)
+
+            # 相机参数
+            focal_length = w
+            cam_matrix = np.array([[focal_length, 0, w/2],
+                                [0, focal_length, h/2],
+                                [0, 0, 1]], dtype=np.float64)
+            dist_matrix = np.zeros((4, 1), dtype=np.float64)
+
+            success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
+            if success:
+                rmat, _ = cv2.Rodrigues(rot_vec)
+                angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
+                pitch = angles[0] * 360   # 单位：度
+                yaw   = angles[1] * 360
+
+                # 累计计数
+                if pitch < -PITCH_THRESH_DEG:
+                    nod_counter += 1
+                else:
+                    nod_counter = 0
+
+                if abs(yaw) > YAW_THRESH_DEG:
+                    shake_counter += 1
+                else:
+                    shake_counter = 0
+
+                if nod_counter >= NOD_THRESH_COUNT:
+                    engine.say("请注意，您正在打瞌睡！")
+                    engine.runAndWait()
+                    
+                    
+
+                if shake_counter >= SHAKE_THRESH_COUNT:
+                    engine.say("请注意，您正在摇头！")
+                    engine.runAndWait()
+                    
+                    
+
+                # 绘制头部朝向线
+                nose_proj, _ = cv2.projectPoints(
+                    nose_3d.reshape(-1, 3), rot_vec, trans_vec, cam_matrix, dist_matrix
+                )
+                p1 = nose_2d
+                p2 = (int(p1[0] + yaw * 0.5), int(p1[1] - pitch * 0.5))
+                cv2.line(frame, p1, p2, (255, 0, 0), 2)
+        
+        
+
+        # 显示结果
+        cv2.imshow('Head Pose Detection', frame)
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+    # 释放资源
+    cap.release()
+    cv2.destroyAllWindows()
+    return {"message": "视频处理完成"}
 
 
 @app.post('/api/process-gesture')

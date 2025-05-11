@@ -137,8 +137,8 @@ async function processVideo() {
       const data = await response.json();
 
       // 3. 根据返回结果给出提示
-      if (data.warning) {
-          alert('请集中注意力！');
+      if (data.message) {
+          alert('视频处理完成');
       }
   } catch (err) {
       console.error('视频处理错误:', err);

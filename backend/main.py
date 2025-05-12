@@ -120,7 +120,7 @@ async def speech_to_text(audio: UploadFile = File(...)) -> Dict[str, str]:
         }
         
         # 使用Whisper进行语音识别
-        result = model.transcribe(tmp_path, language='zh', **default_options)
+        result = model.transcribe(tmp_path, language='zh')
         os.unlink(tmp_path)  # 删除临时文件
         
         command_mapping = {
@@ -169,9 +169,9 @@ async def speech_to_text(audio: UploadFile = File(...)) -> Dict[str, str]:
 @app.post('/api/process-video')
 async def process_video():
     """
-    头部姿态监测API，检测驾驶员是否有摇头行为
+    驾驶员状态姿态监测API，检测驾驶员是否有分心驾驶
     
-    打开摄像头，实时监测驾驶员头部姿态
+    打开摄像头，实时监测驾驶员状态
     """
     # -------------------- 初始化 MediaPipe Face Mesh --------------------
     mp_face_mesh = mp.solutions.face_mesh
@@ -317,8 +317,6 @@ async def process_video():
                 p2 = (int(p1[0] + yaw * 0.5), int(p1[1] - pitch * 0.5))
                 cv2.line(frame, p1, p2, (255, 0, 0), 2)
         
-        
-
         # 显示结果
         cv2.imshow('Head Pose Detection', frame)
         if cv2.waitKey(1) & 0xFF == 27:

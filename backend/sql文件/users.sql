@@ -11,7 +11,7 @@
  Target Server Version : 80036
  File Encoding         : 65001
 
- Date: 12/05/2025 19:24:36
+ Date: 12/05/2025 19:46:26
 */
 
 SET NAMES utf8mb4;
@@ -35,5 +35,6 @@ CREATE TABLE `users`  (
 -- ----------------------------
 INSERT INTO `users` VALUES (1, 'admin', 'admin123', 'admin');
 INSERT INTO `users` VALUES (2, 'user1', 'user123', 'user');
+INSERT INTO `users` VALUES (3, 'asy', 'Aaa041082', 'driver');
 
 SET FOREIGN_KEY_CHECKS = 1;

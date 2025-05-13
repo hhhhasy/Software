@@ -19,7 +19,17 @@ async function handleLogin(e) {
     const { role } = await response.json();
     session.set('currentUser', { username, role });
     
-    window.location.href = role === 'admin' ? 'admin.html' : 'home.html';
+    if(role=='admin'){
+      window.location.href='admin.html'
+    }
+
+    if(role=='driver'){
+      window.location.href='home.html'
+    }
+
+    if(role=='user'){
+      window.location.href='passenger.html'
+    }
   } catch (err) {
     alert(err.detail || '登录失败');
   }

@@ -16,7 +16,6 @@ function initMusicPlayer() {
   if (!audio) return;
 
   const playlist = [
-    "../../backend/audio/song.mp3",
     "../../backend/audio/song1.mp3"
   ];
   let currentIndex = 0;

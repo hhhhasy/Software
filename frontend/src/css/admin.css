@@ -1,0 +1,227 @@
+/* 管理员界面样式 */
+
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  background: rgba(10, 14, 26, 0.95);
+  box-shadow: 0 0 20px rgba(0, 247, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.main-nav h2 {
+  font-size: 1.8rem;
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+}
+
+.user-info {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+#adminLogout {
+  background: rgba(255, 71, 126, 0.15);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#adminLogout:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.content-container {
+  padding: 2rem 3rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.management-panel {
+  background: var(--card-bg);
+  border-radius: 15px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(123, 97, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.neon-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(0, 247, 255, 0.2);
+}
+
+.neon-header h3 {
+  font-size: 1.4rem;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+/* 用户表格 */
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.user-table th,
+.user-table td {
+  padding: 1.2rem;
+  text-align: left;
+}
+
+.user-table thead {
+  background: linear-gradient(45deg, var(--card-bg), rgba(15, 22, 45, 0.7));
+  border-bottom: 2px solid var(--primary);
+}
+
+.user-table th {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.user-table tbody tr {
+  transition: background 0.3s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.user-table tbody tr:hover {
+  background: rgba(0, 247, 255, 0.03);
+}
+
+.user-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-edit, .btn-delete {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-edit {
+  background: rgba(0, 247, 255, 0.1);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.btn-edit:hover {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.btn-delete {
+  background: rgba(255, 71, 126, 0.1);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.btn-delete:hover {
+  background: var(--danger);
+  color: white;
+}
+
+/* 统计卡片 */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(123, 97, 255, 0.2);
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  color: var(--primary);
+  margin: 0.5rem 0;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+/* 日志容器和条目样式 */
+.log-container {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: monospace;
+}
+
+.log-entry {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid #2a3a4a;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.log-time {
+  color: #888;
+  flex: 0 0 180px;
+}
+
+.log-level {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  flex: 0 0 70px;
+  text-align: center;
+}
+
+.log-level.info {
+  background: rgba(0, 120, 255, 0.2);
+  color: #40a9ff;
+}
+
+.log-level.success {
+  background: rgba(0, 200, 80, 0.2);
+  color: #52c41a;
+}
+
+.log-level.warning {
+  background: rgba(255, 180, 0, 0.2);
+  color: #faad14;
+}
+
+.log-level.error {
+  background: rgba(255, 70, 70, 0.2);
+  color: #ff4d4f;
+}
+
+.log-message {
+  flex: 1;
+}

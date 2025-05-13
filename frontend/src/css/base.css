@@ -1,0 +1,60 @@
+/* 基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+:root {
+  --primary: #00f7ff;
+  --secondary: #7b61ff;
+  --bg: #0a0e1a;
+  --card-bg: rgba(15, 22, 45, 0.9);
+  --danger: #ff467e;
+  --text-soft: rgba(255,255,255,0.7);
+  --accent: #ffcc00;
+}
+
+body {
+  background: var(--bg);
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* 通用组件样式 */
+.card {
+  background: var(--card-bg);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(123,97,255,0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.neon-header h3 {
+  font-size: 1.4rem;
+  color: var(--primary);
+  text-shadow: 0 0 8px rgba(0,247,255,0.5);
+  margin-bottom: 1rem;
+}
+
+/* 按钮样式 */
+button {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+/* 状态指示器 */
+.status-indicator {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(10,14,26,0.8);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}

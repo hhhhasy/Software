@@ -1,324 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>系统管理控制台 | NeuroDrive Admin</title>
-    <style>
-        :root {
-            --primary: #00f7ff;
-            --secondary: #7b61ff;
-            --bg: #0a0e1a;
-            --card-bg: rgba(15, 22, 45, 0.9);
-            --danger: #ff467e;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui;
-        }
-
-        body {
-            background: var(--bg);
-            color: #fff;
-            min-height: 100vh;
-        }
-
-        .main-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 3rem;
-            background: rgba(10, 14, 26, 0.95);
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .main-nav h2 {
-            font-size: 1.8rem;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
-
-        .user-info {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        #adminLogout {
-            background: rgba(255, 71, 126, 0.15);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            padding: 0.6rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        #adminLogout:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        .content-container {
-            padding: 2rem 3rem;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        .management-panel {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(123, 97, 255, 0.2);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .neon-header {
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid rgba(0, 247, 255, 0.2);
-        }
-
-        .neon-header h3 {
-            font-size: 1.4rem;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }
-
-        .user-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .user-table th,
-        .user-table td {
-            padding: 1.2rem;
-            text-align: left;
-        }
-
-        .user-table thead {
-            background: linear-gradient(45deg, var(--card-bg), rgba(15, 22, 45, 0.7));
-            border-bottom: 2px solid var(--primary);
-        }
-
-        .user-table th {
-            color: var(--primary);
-            font-weight: 500;
-        }
-
-        .user-table tbody tr {
-            transition: background 0.3s;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .user-table tbody tr:hover {
-            background: rgba(0, 247, 255, 0.03);
-        }
-
-        .user-table tbody tr:last-child {
-            border-bottom: none;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .btn-edit, .btn-delete {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-edit {
-            background: rgba(0, 247, 255, 0.1);
-            color: var(--primary);
-            border: 1px solid var(--primary);
-        }
-
-        .btn-edit:hover {
-            background: var(--primary);
-            color: var(--bg);
-        }
-
-        .btn-delete {
-            background: rgba(255, 71, 126, 0.1);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-        }
-
-        .btn-delete:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        /* 新增统计卡片 */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid rgba(123, 97, 255, 0.2);
-        }
-
-        .stat-value {
-            font-size: 2.2rem;
-            color: var(--primary);
-            margin: 0.5rem 0;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台 | NeuroDrive</title>
+    <link rel="stylesheet" href="../src/css/base.css">
+    <link rel="stylesheet" href="../src/css/admin.css">
+    <!-- 添加 Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- 顶部导航 -->
     <nav class="main-nav">
-        <h2>🔐 NeuroDrive 管理控制台</h2>
+        <h2>NeuroDrive 管理控制台</h2>
         <div class="user-info">
-            <span id="adminUser">管理员</span>
-            <button id="adminLogout">⏻ 安全退出</button>
+            <span><i class="fas fa-user-shield"></i> 管理员: <strong id="adminUser">未登录</strong></span>
+            <button id="adminLogout">退出登录</button>
         </div>
     </nav>
 
+    <!-- 主内容区域 -->
     <div class="content-container">
+        <!-- 统计数据卡片 -->
         <div class="stats-container">
             <div class="stat-card">
-                <div class="stat-value">1,024</div>
-                <div class="stat-label">今日活跃用户</div>
+                <i class="fas fa-users"></i>
+                <div class="stat-value">12</div>
+                <div class="stat-label">注册用户</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">98.6%</div>
-                <div class="stat-label">系统可用率</div>
+                <i class="fas fa-car"></i>
+                <div class="stat-value">5</div>
+                <div class="stat-label">活跃车辆</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">32</div>
-                <div class="stat-label">在线设备</div>
+                <i class="fas fa-microphone"></i>
+                <div class="stat-value">324</div>
+                <div class="stat-label">语音指令</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-hand"></i>
+                <div class="stat-value">156</div>
+                <div class="stat-label">手势操作</div>
             </div>
         </div>
 
+        <!-- 用户管理面板 -->
         <div class="management-panel">
             <div class="neon-header">
-                <h3>📊 用户管理系统</h3>
+                <h3><i class="fas fa-users-gear"></i> 用户管理</h3>
             </div>
             
             <table class="user-table">
                 <thead>
                     <tr>
                         <th>用户名</th>
-                        <th>用户角色</th>
-                        <th>操作</th> 
+                        <th>角色</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody id="userList">
-                    <!-- JS 会在这里插入 <tr>…</tr> -->
+                    <!-- 用户数据将由JavaScript动态加载 -->
                 </tbody>
             </table>
         </div>
+
+        <!-- 系统日志面板 -->
+        <div class="management-panel">
+            <div class="neon-header">
+                <h3><i class="fas fa-clipboard-list"></i> 系统日志</h3>
+            </div>
+            
+            <div class="log-container">
+                <div class="log-entry">
+                    <span class="log-time">2025-05-13 09:15:22</span>
+                    <span class="log-level info">INFO</span>
+                    <span class="log-message">系统初始化完成</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2025-05-13 09:16:05</span>
+                    <span class="log-level success">SUCCESS</span>
+                    <span class="log-message">用户 admin 登录成功</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2025-05-13 09:30:18</span>
+                    <span class="log-level warning">WARNING</span>
+                    <span class="log-message">用户 user1 多次尝试调用受限API</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2025-05-13 10:05:42</span>
+                    <span class="log-level error">ERROR</span>
+                    <span class="log-message">语音识别服务暂时不可用</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2025-05-13 10:12:37</span>
+                    <span class="log-level success">SUCCESS</span>
+                    <span class="log-message">用户 test_user 注册成功</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <script>
-        async function loadUsers() {
-          try {
-            // 1) 用 POST 请求获取用户列表
-            const res = await fetch('http://localhost:8000/api/users', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              // 后端接口不需要请求体的话，这里可以省略 body
-              // body: JSON.stringify({})
-            });
-            if (!res.ok) throw new Error('网络错误: ' + res.status);
-            const users = await res.json();
-      
-            // 2) 渲染到表格
-            const tbody = document.getElementById('userList');
-            tbody.innerHTML = '';  // 清空当前内容
-      
-            users.forEach(user => {
-              const tr = document.createElement('tr');
-      
-              // 用户名列
-              const tdName = document.createElement('td');
-              tdName.textContent = user.username;
-              tr.appendChild(tdName);
-      
-              // 角色列
-              const tdRole = document.createElement('td');
-              const span = document.createElement('span');
-              span.classList.add('role-tag');
-              span.textContent = user.role;
-              tdRole.appendChild(span);
-              tr.appendChild(tdRole);
-      
-              // 操作列（可通过 data-id 获取 user.id 进行编辑/删除）
-              const tdAct = document.createElement('td');
-              tdAct.innerHTML = `
-                <div class="action-buttons" data-id="${user.id}">
-                  <button class="btn-edit">✏️ 编辑</button>
-                  <button class="btn-delete">🗑️ 删除</button>
-                </div>`;
-              tr.appendChild(tdAct);
-      
-              tbody.appendChild(tr);
-            });
-      
-            // 3) 可选：给编辑/删除按钮绑定事件
-            document.querySelectorAll('.btn-edit').forEach(btn => {
-              btn.addEventListener('click', e => {
-                const id = e.currentTarget.closest('.action-buttons').dataset.id;
-                // TODO: 跳转到编辑页或弹出编辑框
-                window.location.href = `/users/${id}/edit`;
-              });
-            });
-            document.querySelectorAll('.btn-delete').forEach(btn => {
-              btn.addEventListener('click', async e => {
-                const id = e.currentTarget.closest('.action-buttons').dataset.id;
-                if (!confirm('确定要删除此用户？')) return;
-                try {
-                  const delRes = await fetch(`/api/users/${id}`, {
-                    method: 'DELETE'
-                  });
-                  if (!delRes.ok) throw new Error('删除失败');
-                  // 删除成功后，重新加载列表
-                  loadUsers();
-                } catch (err) {
-                  console.error(err);
-                  alert('删除出错：' + err.message);
-                }
-              });
-            });
-      
-          } catch (err) {
-            console.error('加载用户失败：', err);
-          }
-        }
-      
-        document.addEventListener('DOMContentLoaded', loadUsers);
-        document.getElementById("adminLogout").addEventListener("click", function() {
-        window.location.href = "login.html"; // 替换成你的退出地址
-    });
-    </script>  
+
+    <!-- 状态指示器 -->
+    <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span class="status-text">管理员模式</span>
+    </div>
+
+    <!-- 引入JS模块 -->
+    <script type="module" src="../src/js/auth-check.js"></script>
+    <script type="module" src="../src/js/admin.js"></script>
 </body>
 </html>

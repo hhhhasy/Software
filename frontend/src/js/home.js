@@ -165,12 +165,7 @@ function initHomePage() {
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-  displayUserInfo();
-  initLogout();
-  initTabSwitching(); // 确保这个函数最先执行以设置初始面板显示
-  initMusicPlayer();
-});
+document.addEventListener('DOMContentLoaded', initHomePage);
 
 // 导出函数供其他模块使用
 export { initMusicPlayer, initTabSwitching };

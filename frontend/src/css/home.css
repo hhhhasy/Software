@@ -282,6 +282,6 @@ body {
   display: block;
 }
 
-.panel.hidden {
-  display: none !important; /* 使用 !important 确保覆盖其他可能的显示设置 */
+.content .panel.hidden {
+  display: none;
 }

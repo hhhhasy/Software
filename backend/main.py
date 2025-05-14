@@ -75,13 +75,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 添加CORS中间件，确保前端可以访问API
+# CORS配置
+origins = [
+    "http://localhost:3000",     # React 开发服务器
+    "http://localhost:8080",     # Vue 开发服务器
+    "http://127.0.0.1:5500",    # Live Server
+    "http://localhost:5500",     # Live Server 备用
+]
+
+# 添加CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 在生产环境中设置为特定域名
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
+    max_age=3600,               # 预检请求缓存时间
 )
 
 # 延迟加载Whisper模型

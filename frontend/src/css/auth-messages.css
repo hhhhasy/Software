@@ -1,0 +1,35 @@
+/* 认证消息样式 */
+.auth-error, .auth-success {
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  transition: opacity 0.3s ease;
+}
+
+.auth-error {
+  background: rgba(255, 50, 50, 0.1);
+  border-left: 4px solid #ff4d4f;
+  color: #ff6b6b;
+}
+
+.auth-success {
+  background: rgba(82, 196, 26, 0.1);
+  border-left: 4px solid #52c41a;
+  color: #73d13d;
+}
+
+/* 登录按钮加载状态 */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

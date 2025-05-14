@@ -42,6 +42,20 @@ class UserLogin(BaseModel):
 class UserRegister(UserLogin):
     confirm_password: str
 
+#####
+import threading
+
+# 封装异步播报
+def speak_async(text: str):
+    def _speak():
+        try:
+            engine.say(text)
+            engine.runAndWait()
+        except Exception as e:
+            print(f"[语音播报错误] {e}")
+    threading.Thread(target=_speak, daemon=True).start()
+
+#####
 # ============= 应用初始化 =============
 
 app = FastAPI(
@@ -157,9 +171,13 @@ async def speech_to_text(audio: UploadFile = File(...)) -> Dict[str, str]:
         for command, response in command_mapping.items():
             if command in recognized_text:
                 print(f"匹配到指令: {command}")
-                engine.say(response)  # 使用语音引擎进行语音输出
-                engine.runAndWait()
-                return {"text": response}
+                speak_async(response)
+                return {
+                    "command": command,
+                    "response": response
+                }
+
+
         
         # 未匹配到指令，返回原始识别文本
         return {"text": recognized_text}

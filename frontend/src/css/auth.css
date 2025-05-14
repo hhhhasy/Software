@@ -1,15 +1,6 @@
-/* 基础重置 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', sans-serif;
-}
+/* 认证页面样式 */
 
 body {
-  background: #0a0a1a;
-  color: #e0e0ff;
-  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -69,7 +60,8 @@ input:focus {
   color: #40a9ff;
 }
 
-button {
+/* 认证按钮 */
+.auth-container button {
   width: 100%;
   padding: 1rem;
   background: linear-gradient(45deg, #40a9ff, #0066cc);
@@ -81,7 +73,7 @@ button {
   transition: transform 0.2s ease;
 }
 
-button:hover {
+.auth-container button:hover {
   transform: scale(1.02);
   box-shadow: 0 0 15px rgba(64, 169, 255, 0.4);
 }

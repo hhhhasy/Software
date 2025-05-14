@@ -1,0 +1,287 @@
+/* 主界面样式 */
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部导航 */
+.main-nav { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  padding: 1rem 2rem; 
+  background: rgba(10,14,26,0.95); 
+  backdrop-filter: blur(6px); 
+}
+
+.main-nav h2 { 
+  font-size: 1.8rem; 
+  background: linear-gradient(45deg,var(--primary),var(--secondary)); 
+  -webkit-text-fill-color: transparent; 
+  -webkit-background-clip: text; 
+}
+
+.user-info { 
+  position: absolute; 
+  top: 50%; 
+  right: 2rem; 
+  transform: translateY(-50%); 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+  font-size: 0.9rem; 
+}
+
+#logout { 
+  background: rgba(255,50,50,0.15); 
+  color: #ff3232; 
+  border: 1px solid #ff3232; 
+  padding: 0.4rem 1rem; 
+  border-radius: 20px; 
+  cursor: pointer; 
+  transition: 0.3s; 
+}
+
+#logout:hover { 
+  background: #ff3232; 
+  color: #fff; 
+}
+
+/* 主内容布局 */
+.container { 
+  flex: 1; 
+  display: grid; 
+  grid-template-columns: 250px 1fr; 
+}
+
+/* 侧边栏 */
+.sidebar { 
+  background: rgba(15,22,45,0.95); 
+  padding: 1.5rem; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.5rem; 
+  border-right: 1px solid rgba(123,97,255,0.2); 
+}
+
+.sidebar button { 
+  background: none; 
+  border: none; 
+  text-align: left; 
+  padding: 0.8rem; 
+  font-size: 1rem; 
+  color: var(--text-soft); 
+  border-radius: 8px; 
+  cursor: pointer; 
+  transition: background 0.3s; 
+}
+
+.sidebar button:hover, .sidebar button.active { 
+  background: rgba(0,247,255,0.1); 
+  color: #fff; 
+}
+
+/* 内容区 */
+.content { 
+  padding: 2rem; 
+  overflow: auto; 
+}
+
+/* 输入区 */
+.input-section { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem; 
+}
+
+.voice-btn { 
+  background: linear-gradient(45deg,var(--primary),var(--secondary)); 
+  border: none; 
+  padding: 0.8rem 1.5rem; 
+  border-radius: 20px; 
+  color: #fff; 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+  transition: transform 0.3s; 
+}
+
+.voice-btn:hover { 
+  transform: scale(1.05); 
+}
+
+#textInput { 
+  background: rgba(255,255,255,0.05); 
+  border: 1px solid rgba(0,247,255,0.3); 
+  border-radius: 10px; 
+  padding: 1rem; 
+  color: #fff; 
+  min-height: 120px; 
+  resize: vertical; 
+}
+
+/* 音乐播放器 */
+.music-player { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 1rem; 
+}
+
+.music-icon { 
+  font-size: 3.5rem; 
+  color: var(--accent); 
+  text-shadow: 0 0 15px rgba(255,204,0,0.4); 
+  cursor: pointer; 
+  transition: transform 0.3s; 
+}
+
+.music-icon.rotating { 
+  animation: spin 2s linear infinite; 
+}
+
+@keyframes spin { 
+  to { transform: rotate(360deg); } 
+}
+
+.music-controls { 
+  display: flex; 
+  gap: 0.8rem; 
+}
+
+.music-controls button { 
+  background: linear-gradient(45deg,var(--secondary),var(--primary)); 
+  border: none; 
+  padding: 0.6rem 1.2rem; 
+  border-radius: 8px; 
+  display: flex; 
+  align-items: center; 
+  gap: 0.4rem; 
+  cursor: pointer; 
+  transition: transform 0.2s, box-shadow 0.3s; 
+}
+
+.music-controls button:hover { 
+  transform: scale(1.1); 
+  box-shadow: 0 0 10px rgba(123,97,255,0.5); 
+}
+
+/* 天气和行驶状态 */
+.driving-weather-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 1.5rem;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 1rem;
+}
+
+.statusBox {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,247,255,0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  font-size: 1.1rem;
+  color: #fff;
+  text-align: center;
+}
+
+/* 交互控制网格 */
+.interaction-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.panel-title {
+  font-size: 1.6rem;
+  color: var(--primary);
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+}
+
+.control-btn-group {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0;
+}
+
+.control-btn {
+  background: linear-gradient(45deg, var(--secondary), var(--primary));
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.control-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 247, 255, 0.4);
+}
+
+/* 天气卡片样式 */
+.weather-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 1rem 0;
+}
+
+.weather-icon {
+  font-size: 3rem;
+  color: var(--accent);
+}
+
+.weather-details {
+  text-align: center;
+}
+
+.weather-temp {
+  font-size: 2.2rem;
+  font-weight: 300;
+}
+
+.weather-desc {
+  font-size: 1.2rem;
+  margin: 0.3rem 0;
+  color: var(--text-soft);
+}
+
+.weather-location {
+  font-size: 0.9rem;
+  color: var(--primary);
+}
+
+/* 录音按钮状态 */
+.voice-btn.recording {
+  background: linear-gradient(45deg, #ff3232, #ff7575);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); }
+}
+
+/* 面板显示控制 */
+.panel {
+  display: block;
+}
+
+.content .panel.hidden {
+  display: none;
+}

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乘客界面 | NeuroDrive</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../src/css/passenger.css">
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #8338ec;
+            --accent-color: #ff006e;
+            --background-color: #111827;
+            --card-color: #1f2937;
+            --text-color: #f1f5f9;
+            --text-secondary: #9ca3af;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-nav {
+            background-color: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .main-nav h2 {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            font-size: 1.5rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        #currentUser {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 500;
+        }
+        
+        #logout {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        #logout:hover {
+            background-color: #ff4d94;
+            transform: translateY(-2px);
+        }
+        
+        .container {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+        
+        .card {
+            background-color: var(--card-color);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+        
+        /* Music Player Styles */
+        .music-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .music-info {
+            text-align: center;
+            width: 100%;
+        }
+        
+        .track-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        
+        .artist {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .music-icon {
+            width: 150px;
+            height: 150px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 1rem 0;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            box-shadow: 0 0 30px rgba(58, 134, 255, 0.3);
+        }
+        
+        .music-icon::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(58, 134, 255, 0.3), rgba(131, 56, 236, 0.3));
+            border-radius: 50%;
+            z-index: -1;
+        }
+        
+        .music-icon.playing {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(58, 134, 255, 0.3);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 40px rgba(58, 134, 255, 0.5);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(58, 134, 255, 0.3);
+            }
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 2.5px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2.5px;
+        }
+        
+        .timestamp {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        
+        .music-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .music-controls button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .music-controls button:hover {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+        
+        #playPauseBtn {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.7rem;
+            width: 4rem;
+            height: 4rem;
+        }
+        
+        #playPauseBtn:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.1);
+        }
+        
+        /* AC Status Styles */
+        .ac-control {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .ac-status {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            transition: var(--transition);
+        }
+        
+        .ac-status:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        .ac-status h4 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        #currentTemp {
+            color: #3a86ff;
+        }
+        
+        #targetTemp {
+            color: #ff006e;
+        }
+        
+        /* Voice Button Styles */
+        .voice-container {
+            text-align: center;
+        }
+        
+        .voice-btn {
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 1.25rem 2rem;
+            border-radius: 1rem;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .voice-btn i {
+            font-size: 1.4rem;
+        }
+        
+        .voice-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .voice-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-nav {
+                padding: 1rem;
+            }
+            
+            .main-nav h2 {
+                font-size: 1.2rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <h2><i class="fas fa-car-alt"></i> NeuroDrive 智能驾驶系统</h2>
+        <div class="user-info">
+            <span id="currentUser">乘客员</span>
+            <button id="logout">安全退出</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="module-grid">
+            <!-- 音乐播放模块 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-music"></i> 音乐播放
+                </div>
+                <div class="card-content">
+                    <div class="music-player">
+                        <audio id="audioTrack" src="../assets/audio/song1.mp3"></audio>
+                        
+                        <div class="music-info">
+                            <div class="track-name">Beautiful Day</div>
+                            <div class="artist">Cloud Orchestra</div>
+                        </div>
+                        
+                        <div id="musicIcon" class="music-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-bar"></div>
+                        </div>
+                        
+                        <div class="timestamp">
+                            <span>01:23</span>
+                            <span>03:45</span>
+                        </div>
+                        
+                        <div class="music-controls">
+                            <button class="prev" id="prevBtn"><i class="fas fa-step-backward"></i></button>
+                            <button id="playPauseBtn"><i class="fas fa-play" id="ppIcon"></i></button>
+                            <button class="next" id="nextBtn"><i class="fas fa-step-forward"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 空调状态模块 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-snowflake"></i> 空调状态
+                </div>
+                <div class="card-content">
+                    <div class="ac-control">
+                        <div class="ac-status">
+                            <h4>当前温度</h4>
+                            <div class="value" id="currentTemp">24°C</div>
+                        </div>
+                        <div class="ac-status">
+                            <h4>目标温度</h4>
+                            <div class="value" id="targetTemp">22°C</div>
+                        </div>
+                        <div class="ac-status">
+                            <h4>风量等级</h4>
+                            <div class="value">3</div>
+                        </div>
+                        <div class="ac-status">
+                            <h4>运行模式</h4>
+                            <div class="value">自动</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 语音指令按钮 -->
+        <div class="voice-container">
+            <button class="voice-btn" id="voiceBtn">
+                <i class="fas fa-microphone"></i> 语音指令
+            </button>
+        </div>
+    </div>
+
+    <!-- 引入JS模块 -->
+    <script>
+        document.getElementById("logout").addEventListener("click", function() {
+            window.location.href = "login.html"; // 替换成你的退出地址
+        });
+        
+        // 播放/暂停功能示例
+        document.getElementById("playPauseBtn").addEventListener("click", function() {
+            const audioTrack = document.getElementById("audioTrack");
+            const ppIcon = document.getElementById("ppIcon");
+            const musicIcon = document.getElementById("musicIcon");
+            
+            if (audioTrack.paused) {
+                audioTrack.play();
+                ppIcon.classList.remove("fa-play");
+                ppIcon.classList.add("fa-pause");
+                musicIcon.classList.add("playing");
+            } else {
+                audioTrack.pause();
+                ppIcon.classList.remove("fa-pause");
+                ppIcon.classList.add("fa-play");
+                musicIcon.classList.remove("playing");
+            }
+        });
+    </script>
+    <script src="../src/passenger.js"></script>
+    <script type="module" src="../src/js/multimedia.js"></script>
+    
+</body>
+</html>

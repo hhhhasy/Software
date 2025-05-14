@@ -35,6 +35,15 @@ async function toggleRecording() {
           if (!response.ok) throw await response.json();
           
           const { text } = await response.json();
+
+          
+          if(text=="为您播放默认播放列表"){
+            document.getElementById("audioTrack").play();
+          }
+          if(text=="音乐播放已暂停"){
+            document.getElementById("audioTrack").pause();
+          }
+          
           alert(text);
         } catch (err) {
           console.error('语音识别错误:', err);
@@ -98,7 +107,7 @@ async function processGesture() {
     if (data.gesture) {
       switch (data.gesture) {
         case 'fist':
-          document.getElementById('stopBtn')?.click();
+          document.getElementById('audioTrack').pause();
           alert('检测到拳，音乐停止！');
           break;
         case 'OK':

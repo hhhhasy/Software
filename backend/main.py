@@ -2,8 +2,9 @@ import os
 import time
 import logging
 import tempfile
+import re
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status
+from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import whisper
@@ -32,7 +33,7 @@ MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model')
 os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
-DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:Aaa041082@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -67,6 +68,16 @@ class VideoResponse(BaseModel):
 
 class GestureResponse(BaseModel):
     gesture: Optional[str] = None
+
+class LogEntry(BaseModel):
+    timestamp: str
+    level: str
+    source: str
+    message: str
+
+class LogResponse(BaseModel):
+    logs: List[LogEntry]
+    total_entries: int
 
 # ============= 应用初始化 =============
 app = FastAPI(
@@ -632,6 +643,93 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="删除用户失败"
+        )
+
+@app.post("/api/logs", response_model=LogResponse)
+async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] = Body(None)):
+    """
+    获取系统日志API
+    
+    参数:
+    - limit: 返回的最大日志条数，默认100，最大1000
+    - level: 过滤日志级别 (INFO, WARNING, ERROR)，不指定则返回所有级别
+    
+    返回:
+    - 按时间倒序排列的日志条目
+    """
+    try:
+        log_path = os.path.join(os.path.dirname(__file__), "api.log")
+        if not os.path.exists(log_path):
+            logger.warning(f"日志文件不存在: {log_path}")
+            return {"logs": [], "total_entries": 0}
+        
+        logs = []
+        valid_levels = ["INFO", "WARNING", "ERROR", "DEBUG", "CRITICAL"]
+        
+        # 验证日志级别参数
+        if level and level.upper() not in valid_levels:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"无效的日志级别。有效值为: {', '.join(valid_levels)}"
+            )
+        
+        # 尝试不同的编码方式读取日志文件
+        encodings_to_try = ['utf-8', 'gbk', 'gb18030', 'gb2312', 'latin1']
+        log_lines = []
+        
+        for encoding in encodings_to_try:
+            try:
+                with open(log_path, "r", encoding=encoding) as f:
+                    log_lines = f.readlines()
+                logger.info(f"使用 {encoding} 编码成功读取日志文件")
+                break  # 如果成功读取，跳出循环
+            except UnicodeDecodeError:
+                logger.warning(f"尝试使用 {encoding} 编码读取日志文件失败")
+                continue  # 尝试下一种编码
+        
+        if not log_lines:
+            logger.error("无法用任何已知编码读取日志文件")
+            raise ValueError("无法用任何已知编码读取日志文件")
+        
+        # 日志解析正则表达式 - 匹配标准日志格式
+        log_pattern = r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - ([^-]+) - ([^-]+) - (.*)"
+        
+        parsed_logs = []
+        for line in log_lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            match = re.match(log_pattern, line)
+            if match:
+                timestamp, source, log_level, message = match.groups()
+                
+                # 过滤日志级别
+                if level and log_level.strip() != level.upper():
+                    continue
+                
+                parsed_logs.append({
+                    "timestamp": timestamp.strip(),
+                    "source": source.strip(),
+                    "level": log_level.strip(),
+                    "message": message.strip()
+                })
+        
+        # 按时间戳倒序排序并限制数量
+        parsed_logs.reverse()
+        limited_logs = parsed_logs[:limit]
+        
+        logger.info(f"返回 {len(limited_logs)} 条日志记录")
+        return {
+            "logs": limited_logs,
+            "total_entries": len(parsed_logs)
+        }
+        
+    except Exception as e:
+        logger.error(f"读取日志文件失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"无法读取日志: {str(e)}"
         )
 
 # ============= 应用启动 =============

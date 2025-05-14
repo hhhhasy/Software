@@ -9,64 +9,84 @@ const session = {
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
+let currentStream = null; // 🔸 添加此变量用于后续关闭麦克风
 
 async function toggleRecording() {
   const voiceBtn = document.querySelector('.voice-btn');
-  
+
   if (!isRecording) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      currentStream = stream; // 🔸 保存 stream 到全局变量
       mediaRecorder = new MediaRecorder(stream);
       audioChunks = [];
-      
+
       mediaRecorder.ondataavailable = (e) => {
         audioChunks.push(e.data);
       };
-      
+
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.wav');
-        
+
         try {
           const response = await fetch('http://localhost:8000/api/speech-to-text', {
             method: 'POST',
             body: formData
           });
-          
+
           if (!response.ok) throw await response.json();
-          
-          const { text } = await response.json();
+
+          const { command, text } = await response.json();
           alert(text);
+          handleVoiceCommand(command);
         } catch (err) {
           console.error('语音识别错误:', err);
           alert('语音识别失败: ' + (err.detail || '服务器错误'));
         }
       };
-      
+
       mediaRecorder.start();
       isRecording = true;
       voiceBtn.textContent = '⏹ 停止录音';
-      
-      // 5秒后自动停止
+
+      // 自动5秒后停止（保留自动结束）
       setTimeout(() => {
         if (isRecording) {
           mediaRecorder.stop();
-          stream.getTracks().forEach(track => track.stop());
+          currentStream.getTracks().forEach(track => track.stop());
           isRecording = false;
           voiceBtn.textContent = '🎤 语音指令输入';
         }
-      }, 5000);
-      
+      }, 10000);
+
     } catch (err) {
       console.error('录音错误:', err);
       alert('无法访问麦克风: ' + err.message);
     }
+
   } else {
+    // 🔸 用户手动点击“停止”
     mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    currentStream.getTracks().forEach(track => track.stop()); // 🔸 释放麦克风
     isRecording = false;
     voiceBtn.textContent = '🎤 语音指令输入';
+  }
+}
+
+function handleVoiceCommand(commandText) {
+  commandText = commandText.trim();
+  const playBtn  = document.getElementById('playPauseBtn');
+  
+  if (commandText.includes("播放音乐")) {
+    playBtn.click();
+    alert("🎵 已播放音乐");
+  } else if (commandText.includes("暂停音乐")) {
+    playBtn.click();
+    alert("🎵 已暂停音乐");
+  } else {
+    alert("未识别的指令：" + commandText);
   }
 }
 

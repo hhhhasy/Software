@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统维护界面 | NeuroDrive</title>
+    <link rel="stylesheet" href="../src/css/base.css">
+    <link rel="stylesheet" href="../src/css/maintainer.css">
+    <!-- 添加 Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="main-nav">
+        <h2><i class="fas fa-tools"></i> NeuroDrive 系统维护控制台</h2>
+        <div class="user-info">
+            <span><i class="fas fa-user-cog"></i> 维护员: <strong id="maintainerUser">已登录</strong></span>
+            <button id="maintainerLogout">退出登录</button>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <div class="content-container">
+        <!-- 系统状态卡片 -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <i class="fas fa-server"></i>
+                <div class="stat-value" id="serverStatus">正常</div>
+                <div class="stat-label">服务器状态</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-microchip"></i>
+                <div class="stat-value" id="cpuUsage">23%</div>
+                <div class="stat-label">CPU 使用率</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-memory"></i>
+                <div class="stat-value" id="memoryUsage">45%</div>
+                <div class="stat-label">内存使用率</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-hdd"></i>
+                <div class="stat-value" id="diskUsage">38%</div>
+                <div class="stat-label">磁盘使用率</div>
+            </div>
+        </div>
+
+        <!-- 系统日志面板 -->
+        <div class="management-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-clipboard-list"></i> 系统日志</h3>
+                <div class="panel-actions">
+                    <div class="filter-group">
+                        <select id="logLevelFilter">
+                            <option value="">所有级别</option>
+                            <option value="INFO">信息</option>
+                            <option value="WARNING">警告</option>
+                            <option value="ERROR">错误</option>
+                            <option value="DEBUG">调试</option>
+                            <option value="CRITICAL">严重</option>
+                        </select>
+                        <button id="refreshLogs" class="action-btn">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-container" id="logContainer">
+                <!-- 日志将由JavaScript动态加载 -->
+            </div>
+            
+            <div class="pagination">
+                <button id="prevLogs" class="page-btn" disabled><i class="fas fa-chevron-left"></i> 上一页</button>
+                <span id="pageInfo">第 1 页 / 共 ? 页</span>
+                <button id="nextLogs" class="page-btn"><i class="fas fa-chevron-right"></i> 下一页</button>
+            </div>
+        </div>
+
+        <!-- 系统维护工具面板 -->
+        <div class="management-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-wrench"></i> 系统维护工具</h3>
+            </div>
+            
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <div class="tool-icon"><i class="fas fa-broom"></i></div>
+                    <h4>清理缓存</h4>
+                    <p>清理系统临时文件和缓存数据</p>
+                    <button class="tool-btn" id="cleanCacheBtn">执行清理</button>
+                </div>
+                <div class="tool-card">
+                    <div class="tool-icon"><i class="fas fa-database"></i></div>
+                    <h4>数据库维护</h4>
+                    <p>检查并修复数据库完整性</p>
+                    <button class="tool-btn" id="dbMaintenanceBtn">执行检查</button>
+                </div>
+                <div class="tool-card">
+                    <div class="tool-icon"><i class="fas fa-redo"></i></div>
+                    <h4>重启服务</h4>
+                    <p>重新启动关键系统服务</p>
+                    <button class="tool-btn" id="restartServicesBtn">执行重启</button>
+                </div>
+                <div class="tool-card">
+                    <div class="tool-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h4>安全扫描</h4>
+                    <p>扫描系统漏洞和安全隐患</p>
+                    <button class="tool-btn" id="securityScanBtn">执行扫描</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal" id="actionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">操作确认</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 动态内容 -->
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" id="cancelAction">取消</button>
+                <button class="confirm-btn" id="confirmAction">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态指示器 -->
+    <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span class="status-text">维护模式</span>
+    </div>
+
+    <!-- 引入JS模块 -->
+    <script type="module" src="../src/js/auth-check.js"></script>
+    <script type="module" src="../src/js/maintainer.js"></script>
+</body>
+</html>

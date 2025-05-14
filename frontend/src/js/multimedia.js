@@ -23,31 +23,31 @@ let currentStream = null; // 添加此变量用于后续关闭麦克风
 // 切换语音录制状态
 async function toggleRecording() {
   const voiceBtn = document.querySelector('#voiceBtn');
-  
+
   if (!isRecording) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       currentStream = stream; // 保存 stream 到全局变量
       mediaRecorder = new MediaRecorder(stream);
       audioChunks = [];
-      
+
       mediaRecorder.ondataavailable = (e) => {
         audioChunks.push(e.data);
       };
-      
+
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.wav');
-        
+
         try {
           const response = await fetch('http://localhost:8000/api/speech-to-text', {
             method: 'POST',
             body: formData
           });
-          
+
           if (!response.ok) throw await response.json();
-          
+
           const { command, text } = await response.json();
           alert(text);
           handleVoiceCommand(command);
@@ -56,11 +56,11 @@ async function toggleRecording() {
           alert('语音识别失败: ' + (err.detail || '服务器错误'));
         }
       };
-      
+
       mediaRecorder.start();
       isRecording = true;
       voiceBtn.textContent = '⏹ 停止录音';
-      
+
       // 10秒后自动停止
       setTimeout(() => {
         if (isRecording) {
@@ -70,7 +70,7 @@ async function toggleRecording() {
           voiceBtn.textContent = '🎤 语音指令输入';
         }
       }, 10000);
-      
+
     } catch (err) {
       console.error('录音错误:', err);
       alert('无法访问麦克风: ' + err.message);
@@ -113,7 +113,7 @@ async function processGesture() {
     if (data.gesture) {
       switch (data.gesture) {
         case 'fist':
-          document.getElementById('stopBtn')?.click();
+          document.getElementById('audioTrack').pause();
           alert('检测到拳，音乐停止！');
           break;
         case 'OK':

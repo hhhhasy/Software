@@ -40,6 +40,8 @@ async function handleLogin(e) {
       window.location.href = 'home.html';
     } else if(role === 'user'){
       window.location.href = 'passenger.html';
+    } else if(role === 'maintenance_personne'){
+      window.location.href = 'maintainer.html';
     } else {
       // 默认重定向到login
       session.clear();

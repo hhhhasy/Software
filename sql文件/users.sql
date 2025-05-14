@@ -11,7 +11,7 @@
  Target Server Version : 80036
  File Encoding         : 65001
 
- Date: 12/05/2025 19:46:26
+ Date: 14/05/2025 20:52:45
 */
 
 SET NAMES utf8mb4;
@@ -28,7 +28,7 @@ CREATE TABLE `users`  (
   `role` enum('admin','user','driver','maintenance_personne') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'user',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of users
@@ -36,5 +36,7 @@ CREATE TABLE `users`  (
 INSERT INTO `users` VALUES (1, 'admin', 'admin123', 'admin');
 INSERT INTO `users` VALUES (2, 'user1', 'user123', 'user');
 INSERT INTO `users` VALUES (3, 'asy', 'Aaa041082', 'driver');
+INSERT INTO `users` VALUES (4, '111', '111', 'user');
+INSERT INTO `users` VALUES (5, '123', 'Aaa041082', 'maintenance_personne');
 
 SET FOREIGN_KEY_CHECKS = 1;

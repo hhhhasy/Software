@@ -4,173 +4,333 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能交互中心 | NeuroDrive</title>
-    <link rel="stylesheet" href="../src/css/base.css">
-    <link rel="stylesheet" href="../src/css/home.css">
-    <!-- 添加 Font Awesome 图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00f7ff;
+            --secondary: #7b61ff;
+            --bg: #0a0e1a;
+            --card-bg: rgba(15, 22, 45, 0.9);
+            --accent: #ffcc00;
+            --text-soft: rgba(255,255,255,0.7);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+        body { background: var(--bg); color: #fff; min-height:100vh; display:flex; flex-direction:column; }
+        /* 顶部导航 */
+        .main-nav { display:flex; align-items:center; justify-between:space-between; padding:1rem 2rem; background:rgba(10,14,26,0.95); backdrop-filter: blur(6px); }
+        .main-nav h2 { font-size:1.8rem; background:linear-gradient(45deg,var(--primary),var(--secondary)); -webkit-text-fill-color:transparent; -webkit-background-clip:text; }
+        .user-info { position:absolute; top:50%; right:2rem; transform: translateY(-50%); display:flex; gap:1rem; align-items:center; font-size:0.9rem; }
+        #logout { background: rgba(255,50,50,0.15); color:#ff3232; border:1px solid #ff3232; padding:0.4rem 1rem; border-radius:20px; cursor:pointer; transition:0.3s; }
+        #logout:hover { background:#ff3232; color:#fff; }
+
+        /* 主内容布局 */
+        .container { flex:1; display:grid; grid-template-columns:250px 1fr; }
+        /* 侧边栏 */
+        .sidebar { background:rgba(15,22,45,0.95); padding:1.5rem; display:flex; flex-direction:column; gap:1.5rem; border-right:1px solid rgba(123,97,255,0.2); }
+        .sidebar button { background:none; border:none; text-align:left; padding:0.8rem; font-size:1rem; color:var(--text-soft); border-radius:8px; cursor:pointer; transition:background 0.3s; }
+        .sidebar button:hover, .sidebar button.active { background:rgba(0,247,255,0.1); color:#fff; }
+
+        /* 内容卡片 */
+        .content { padding:2rem; overflow:auto; }
+        .card { background:var(--card-bg); border-radius:15px; padding:1.5rem; margin-bottom:2rem; border:1px solid rgba(123,97,255,0.2); position:relative; overflow:hidden; }
+        .card::before { content:''; position:absolute; inset:-2px; background:linear-gradient(45deg,var(--primary),var(--secondary)); z-index:-1; animation:borderFlow 5s linear infinite; }
+        @keyframes borderFlow { 0%{transform:translateX(-100%);}100%{transform:translateX(100%);} }
+        .neon-header h3 { font-size:1.4rem; color:var(--primary); text-shadow:0 0 8px rgba(0,247,255,0.5); margin-bottom:1rem; }
+
+        /* 输入区 */
+        .input-section { display:flex; flex-direction:column; gap:1rem; }
+        .voice-btn { background:linear-gradient(45deg,var(--primary),var(--secondary)); border:none; padding:0.8rem 1.5rem; border-radius:20px; color:#fff; cursor:pointer; display:flex; align-items:center; gap:0.5rem; transition:transform 0.3s; }
+        .voice-btn:hover { transform:scale(1.05); }
+        #textInput { background:rgba(255,255,255,0.05); border:1px solid rgba(0,247,255,0.3); border-radius:10px; padding:1rem; color:#fff; min-height:120px; resize:vertical; }
+        .submit-btn { background:linear-gradient(45deg,var(--secondary),var(--primary)); border:none; padding:0.8rem 1.8rem; border-radius:8px; align-self:flex-end; cursor:pointer; transition:0.3s; }
+        .submit-btn:hover { box-shadow:0 0 10px rgba(123,97,255,0.5); }
+
+        /* 播放音乐 */
+        .music-player { display:flex; flex-direction:column; align-items:center; gap:1rem; }
+        .music-icon { font-size:3.5rem; color:var(--accent); text-shadow:0 0 15px rgba(255,204,0,0.4); cursor:pointer; transition:transform 0.3s; }
+        .music-icon.rotating { animation:spin 2s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg);} }
+        .music-controls { display:flex; gap:0.8rem; }
+        .music-controls button { background:linear-gradient(45deg,var(--secondary),var(--primary)); border:none; padding:0.6rem 1.2rem; border-radius:8px; display:flex; align-items:center; gap:0.4rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.3s; }
+        .music-controls button:hover { transform:scale(1.1); box-shadow:0 0 10px rgba(123,97,255,0.5); }
+        .music-controls .prev, .music-controls .next { background:none; font-size:1.2rem; padding:0.4rem; }
+
+        /* 状态指示 */
+        .status-indicator { position:fixed; bottom:1.5rem; right:1.5rem; display:flex; align-items:center; gap:0.5rem; background:rgba(10,14,26,0.8); padding:0.5rem 1rem; border-radius:20px; }
+        .status-led { width:10px; height:10px; border-radius:50%; background:#0f0; box-shadow:0 0 8px #0f0; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:0.6;}50%{opacity:1;} }
+
+        /* 容器布局 */
+        .driving-weather-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 行驶动画 */
+        .drive-animation {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        #carAnimation {
+            width: 60px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 5px;
+            position: absolute;
+            top: 57px;
+            left: 0;
+            animation: drive 3s linear infinite;
+        }
+        @keyframes drive {
+            0%   { left: 0; }
+            50%  { left: calc(100% - 60px); }
+            100% { left: 0; }
+        }
+
+        /* 天气卡 */
+        .weather-card {
+            background: rgba(15,22,45,0.9);
+            border: 1px solid rgba(123,97,255,0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .weather-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-soft);
+        }
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .weather-main img {
+            width: 48px;
+            height: 48px;
+        }
+        .weather-text .weather-temp {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        .weather-text .weather-desc {
+            font-size: 1rem;
+            color: var(--text-soft);
+        }
+
+        /* 底部状态格栅 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+            gap: 1rem;
+        }
+        .statusBox {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,247,255,0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 1.1rem;
+            color: #fff;
+            text-align: center;
+        }
+        .weather-icon { width: 80px; height:80px; }
+    </style>
 </head>
 <body>
-    <!-- 顶部导航 -->
     <nav class="main-nav">
-        <h2>NeuroDrive 智能交互系统</h2>
+        <h2>🚗 NeuroDrive 智能驾驶系统</h2>
         <div class="user-info">
-            <span id="currentUser">驾驶员：未登录</span>
-            <button id="logout">退出登录</button>
+            <span id="currentUser">驾驶员: 访客用户</span>
+            <button id="logout">安全退出</button>
         </div>
     </nav>
-
-    <!-- 主内容区域 -->
     <div class="container">
-        <!-- 侧边栏 -->
-        <div class="sidebar">
-            <button id="navDriving" class="active">
-                <i class="fas fa-car"></i> 驾驶状态
-            </button>
-            <button id="navMultimodal">
-                <i class="fas fa-microphone"></i> 多模态控制
-            </button>
-            <button id="navMusic">
-                <i class="fas fa-music"></i> 音乐娱乐
-            </button>
-        </div>
-
-        <!-- 内容区 -->
-        <div class="content">
-            <!-- 驾驶状态面板 -->
-            <div id="panelDrivingStatus" class="panel">
-                <h3 class="panel-title">驾驶状态与环境信息</h3>
-                
+        <aside class="sidebar">
+            <button id="navDriving">行驶状态</button>
+            <button class="active" id="navMultimodal">多模态交互</button>
+            <button id="navMusic">音乐播放</button>
+            <button id="navSettings">系统设置</button>
+        </aside>
+        <section class="content">
+            <!-- 行驶状态 + 天气 面板 -->
+            <!-- 内容区中，添加或替换为下面这个 panelDrivingStatus -->
+            <div id="panelDrivingStatus" class="card" style="display:none;">
+                <div class="neon-header"><h3>🚘 当前行驶状态 & 🌤 天气信息</h3></div>
                 <div class="driving-weather-grid">
-                    <!-- 行驶状态卡片 -->
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-tachometer-alt"></i> 行驶状态</h3>
-                        </div>
-                        
-                        <div class="status-grid">
-                            <div class="statusBox">
-                                <i class="fas fa-gauge"></i>
-                                <div>车速: 60 km/h</div>
-                            </div>
-                            <div class="statusBox">
-                                <i class="fas fa-gas-pump"></i>
-                                <div>油量: 65%</div>
-                            </div>
-                            <div class="statusBox">
-                                <i class="fas fa-temperature-half"></i>
-                                <div>引擎温度: 正常</div>
-                            </div>
-                            <div class="statusBox">
-                                <i class="fas fa-road"></i>
-                                <div>里程: 12,345 km</div>
-                            </div>
-                        </div>
+                <!-- 左：行驶动画 -->
+                <div class="drive-animation">
+                    <div id="carAnimation"></div>
+                </div>
+                <!-- 右：硬编码天气卡 -->
+                <div class="weather-card">
+                    <div class="weather-header">
+                    <span>天津</span>
+                    <span>2025-05-08</span>
                     </div>
-                    
-                    <!-- 天气信息卡片 -->
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-cloud-sun"></i> 天气信息</h3>
-                        </div>
-                        
-                        <div class="weather-content">
-                            <div class="weather-icon">
-                                <i class="fas fa-sun"></i>
-                            </div>
-                            <div class="weather-details">
-                                <div class="weather-temp">24°C</div>
-                                <div class="weather-desc">晴朗</div>
-                                <div class="weather-location">北京市</div>
-                            </div>
-                        </div>
+                    <div class="weather-main">
+                    <img src="../../backend/image/sunny1.svg" alt="晴" class="weather-icon"/>
+                    <div class="weather-text">
+                        <div class="weather-temp">24°C</div>
+                        <div class="weather-desc">晴</div>
+                    </div>
                     </div>
                 </div>
+                </div>
+                <!-- 底部状态指标 -->
+                <div class="status-grid">
+                <div class="statusBox">🌡️ 温度: <strong>85°C</strong></div>
+                <div class="statusBox">⛽ 油量: <strong>68%</strong></div>
+                <div class="statusBox">🚀 速度: <strong>72 km/h</strong></div>
+                <div class="statusBox">🔋 电压: <strong>13.5V</strong></div>
+                </div>
             </div>
+            <!-- 多模态交互面板 -->
+            <div id="panelMultimodal" class="card">
+                <div class="neon-header"><h3>🌌 多模态交互接口</h3></div>
+                <div class="input-section">
+                    <button class="voice-btn" id="voiceBtn">🎤 语音指令输入</button>
+                    <button class="voice-btn" id="videoBtn">🎥 视频指令输入</button>
+                    <button class="voice-btn" id="gestureBtn">👋 手势指令输入</button>
+                    <textarea id="textInput" placeholder="输入文字指令或自然语言查询..."></textarea>
+                    <button class="submit-btn" id="submitBtn">🚀 发送指令</button>
+                    <!-- 🆕 模型回答输出区域 -->
+                    <div id="chatOutput" class="chat-reply" style="margin-top: 1rem; color: var(--text-soft); white-space: pre-wrap;"></div>
 
-            <!-- 多模态控制面板 -->
-            <div id="panelMultimodal" class="panel hidden">
-                <h3 class="panel-title">多模态交互控制</h3>
-                
-                <div class="card">
-                    <div class="neon-header">
-                        <h3><i class="fas fa-microphone"></i> 语音交互</h3>
-                    </div>
-                    
-                    <div class="input-section">
-                        <button id="voiceBtn" class="voice-btn">
-                            <i class="fas fa-microphone"></i> 语音指令输入
-                        </button>
-                        <textarea id="textInput" placeholder="语音识别结果将显示在这里..."></textarea>
-                    </div>
                 </div>
-                
-                <div class="interaction-grid">
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-video"></i> 视频姿态监测</h3>
-                        </div>
-                        <div class="control-btn-group">
-                            <button id="videoBtn" class="control-btn">
-                                <i class="fas fa-camera"></i> 开始姿态监测
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-hand"></i> 手势控制</h3>
-                        </div>
-                        <div class="control-btn-group">
-                            <button id="gestureBtn" class="control-btn">
-                                <i class="fas fa-hand-point-up"></i> 打开手势控制
-                            </button>
-                        </div>
+            </div>
+            <!-- 音乐播放面板 -->
+            <div id="panelMusic" class="card" style="display:none;">
+                <div class="neon-header"><h3>🎵 音乐播放</h3></div>
+                <div class="music-player">
+                    <audio id="audioTrack" src="song1.mp3"></audio>
+                    <div id="musicIcon" class="music-icon">🎶</div>
+                    <div class="music-controls">
+                        <button class="prev" id="prevBtn">⏮️</button>
+                        <button id="playPauseBtn"><span id="ppIcon">▶️</span><span id="ppText">播放</span></button>
+                        <button class="next" id="nextBtn">⏭️</button>
+                        <button id="stopBtn">⏹️</button>
                     </div>
                 </div>
             </div>
-
-            <!-- 音乐播放器面板 -->
-            <div id="panelMusic" class="panel hidden">
-                <h3 class="panel-title">音乐娱乐系统</h3>
-                
-                <div class="card">
-                    <div class="neon-header">
-                        <h3><i class="fas fa-music"></i> 音乐播放器</h3>
-                    </div>
-                    
-                    <div class="music-player">
-                        <audio id="audioTrack" src="../assets/audio/song1.mp3"></audio>
-                        <i id="musicIcon" class="fas fa-music music-icon"></i>
-                        <div class="music-controls">
-                            <button id="prevBtn">
-                                <i class="fas fa-backward"></i> 上一曲
-                            </button>
-                            <button id="playPauseBtn">
-                                <i id="ppIcon" class="fas fa-play"></i>
-                                <span id="ppText">播放</span>
-                            </button>
-                            <button id="stopBtn">
-                                <i class="fas fa-stop"></i> 停止
-                            </button>
-                            <button id="nextBtn">
-                                <i class="fas fa-forward"></i> 下一曲
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
+    <div class="status-indicator"><div class="status-led"></div><span>系统连接正常</span></div>
+<script src="../src/renderer.js"></script>
+<script>
+    // 标签切换逻辑
+    const navBtns = document.querySelectorAll('.sidebar button');
+    const panels = {
+        driving:   document.getElementById('panelDrivingStatus'),
+        multimodal:document.getElementById('panelMultimodal'),
+        music:     document.getElementById('panelMusic')
+    };
 
-    <!-- 状态指示器 -->
-    <div class="status-indicator">
-        <div class="status-dot"></div>
-        <span class="status-text">系统正常</span>
-    </div>
+    navBtns.forEach(btn => btn.addEventListener('click', ()=> {
+        navBtns.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        // 隐藏所有
+        Object.values(panels).forEach(p=>p.style.display='none');
+        // 显示对应
+        if (btn.id==='navDriving')    panels.driving.style.display='block';
+        if (btn.id==='navMultimodal') panels.multimodal.style.display='block';
+        if (btn.id==='navMusic')      panels.music.style.display='block';
+    }));
+</script>
+<script>
+    document.getElementById('voiceBtn').addEventListener('click', toggleRecording);
+    document.getElementById('videoBtn').addEventListener('click', processVideo);
+    document.getElementById('gestureBtn').addEventListener('click', processGesture);
+    document.getElementById("logout").addEventListener("click", function() {
+        window.location.href = "login.html"; // 替换成你的退出地址
+    });
 
-    <!-- 引入JS模块 -->
-    <script type="module" src="../src/js/auth-check.js"></script>
-    <script type="module" src="../src/js/home.js"></script>
-    <script type="module" src="../src/js/multimedia.js"></script>
+    const audio    = document.getElementById('audioTrack');
+    const icon     = document.getElementById('musicIcon');
+    const playBtn  = document.getElementById('playPauseBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const ppIcon   = document.getElementById('ppIcon');
+    const ppText   = document.getElementById('ppText');
+
+    const playlist = [
+        "../../backend/audio/song.mp3",
+        "../../backend/audio/song1.mp3"
+        // …根据需要继续添加
+    ];
+    let currentIndex = 0;
+
+    // 2. 加载指定索引的音轨
+    function loadTrack(index) {
+    // 索引越界处理：循环播放
+    if (index < 0) index = playlist.length - 1;
+    if (index >= playlist.length) index = 0;
+    currentIndex = index;
+
+    audio.src = playlist[currentIndex];
+    audio.currentTime = 0;
+    updateUI(false);    // 重置按钮和图标
+    }
+
+    // 3. “上一首”“下一首”按钮
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    prevBtn.addEventListener('click', () => {
+    loadTrack(currentIndex - 1);
+    audio.play();
+    updateUI(true);
+    });
+
+    nextBtn.addEventListener('click', () => {
+    loadTrack(currentIndex + 1);
+    audio.play();
+    updateUI(true);
+    });
+
+    // 4. 初始加载第一首
+    loadTrack(currentIndex);
+
+    function updateUI(isPlaying) {
+        if (isPlaying) {
+        icon.classList.add('rotating');
+        ppIcon.textContent = '⏸️';
+        ppText.textContent = '暂停';
+        } else {
+        icon.classList.remove('rotating');
+        ppIcon.textContent = '▶️';
+        ppText.textContent = '播放';
+        }
+    }
+
+    playBtn.addEventListener('click', () => {
+        if (audio.paused) {
+        audio.play();
+        updateUI(true);
+        } else {
+        audio.pause();
+        updateUI(false);
+        }
+    });
+
+    // 点击音符也能切换播放/暂停
+    icon.addEventListener('click', () => playBtn.click());
+
+    stopBtn.addEventListener('click', () => {
+        audio.pause();
+        audio.currentTime = 0;
+        updateUI(false);
+    });
+
+    // 当音乐自然结束时，恢复图标状态
+    audio.addEventListener('ended', () => updateUI(false));
+</script>
 </body>
 </html>

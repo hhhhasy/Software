@@ -1,7 +1,7 @@
 {
   "name": "vehicle-mmi-system",
   "version": "1.0.0",
-  "main": "src/js/main.js",
+  "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --debug"

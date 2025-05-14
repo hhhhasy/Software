@@ -12,16 +12,8 @@ import cv2
 import numpy as np
 import joblib
 import mediapipe as mp
-<<<<<<< HEAD
-from flask import Flask, jsonify, request
-from pydantic import BaseModel, Field
-from sqlalchemy import Column, Integer, String, DateTime, create_engine
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
-from datetime import datetime
-=======
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
->>>>>>> 62effe859db61d14a57a1080e47ac7b58925e3c5
 
 
 # ============= 日志配置 =============
@@ -40,12 +32,8 @@ MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model')
 os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
-<<<<<<< HEAD
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
 DATABASE_URL = "mysql+pymysql://root:Dskl930%40@localhost:3306/software"
-=======
-DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
->>>>>>> 62effe859db61d14a57a1080e47ac7b58925e3c5
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -58,12 +46,7 @@ class User(Base):
     password = Column(String(255), nullable=False)  # 明文存储
     role = Column(String(20), nullable=False, default="user")
 
-<<<<<<< HEAD
-
-# Pydantic 模式
-=======
 # ============= Pydantic 模型 =============
->>>>>>> 62effe859db61d14a57a1080e47ac7b58925e3c5
 class UserLogin(BaseModel):
     username: str = Field(..., max_length=50)
     password: str
@@ -71,26 +54,10 @@ class UserLogin(BaseModel):
 class UserRegister(UserLogin):
     confirm_password: str
 
-<<<<<<< HEAD
-#####
-import threading
 
-# 封装异步播报
-def speak_async(text: str):
-    def _speak():
-        try:
-            engine.say(text)
-            engine.runAndWait()
-        except Exception as e:
-            print(f"[语音播报错误] {e}")
-    threading.Thread(target=_speak, daemon=True).start()
-
-#####
 # ============= 应用初始化 =============
-=======
 class LoginResponse(BaseModel):
     role: str
->>>>>>> 62effe859db61d14a57a1080e47ac7b58925e3c5
 
 class MessageResponse(BaseModel):
     message: str
@@ -136,7 +103,7 @@ def get_whisper_model():
     if whisper_model is None:
         try:
             logger.info("正在加载Whisper模型...")
-            whisper_model = whisper.load_model("small")  # 使用small模型提高速度
+            whisper_model = whisper.load_model("turbo")  # 使用small模型提高速度
             logger.info("Whisper模型加载完成")
         except Exception as e:
             logger.error(f"加载Whisper模型失败: {e}")
@@ -284,56 +251,6 @@ async def speech_to_text(audio: UploadFile = File(...)):
         
         logger.info("临时音频文件已保存，开始进行语音识别")
         
-<<<<<<< HEAD
-        # 使用Whisper进行语音识别
-        result = model.transcribe(tmp_path, language='zh', **default_options)
-        os.unlink(tmp_path)  # 删除临时文件
-        
-        command_mapping = {
-            "打开空调": "已经打开空调",
-            "关闭空调": "已经关闭空调",
-            "把温度调高": "已经调高温度",
-            "调低温度": "已经调低温度",
-            "把风速调到中档": "风速已调至中档",
-            "最大风速": "已将风速调至最大档位",
-            "把风向调到吹向前排": "风向已调整为前排吹风模式",
-            "打开内循环": "已切换到内循环模式",
-            "切换外循环": "已切换到外循环模式",
-            "开启前挡风玻璃除雾": "前挡除雾功能已启动",
-            "关闭后挡风玻璃除雾": "已关闭后挡除雾",
-            "打开司机座椅加热": "司机座椅加热已开启",
-            "关闭副驾驶座椅加热": "已关闭副驾驶座椅加热",
-            "播放音乐": "为您播放默认播放列表",
-            "播放周杰伦的歌": "正在播放周杰伦的热门歌曲",
-            "暂停音乐": "音乐播放已暂停",
-            "下一首歌": "已切换到下一首歌曲",
-            "上一首歌": "已播放上一首歌曲",
-            "导航到最近的加油站": "已规划到最近加油站的路线，开始导航",
-            "取消导航": "导航已取消",
-            "查询剩余油量": "当前油箱剩余约40%",
-            "打开左后车窗": "左后车窗已打开",
-            "关闭所有车窗": "所有车窗已关闭并锁定",
-            "检查胎压": "所有轮胎胎压正常，前轮36 PSI，后轮35 PSI",
-            "切换到运动模式": "已切换至运动模式",
-            "切换到舒适模式": "已切换至舒适模式"
-        }
-        
-        # 检查识别结果是否匹配预设指令
-        recognized_text = result["text"]
-        for command, response in command_mapping.items():
-            if command in recognized_text:
-                print(f"匹配到指令: {command}")
-                speak_async(response)
-                return {
-                    "command": command,
-                    "response": response
-                }
-
-
-        
-        # 未匹配到指令，返回原始识别文本
-        return {"text": recognized_text}
-=======
         try:
             # 获取模型并进行语音识别
             model = get_whisper_model()
@@ -354,10 +271,16 @@ async def speech_to_text(audio: UploadFile = File(...)):
                 except Exception as e:
                     logger.warning(f"语音输出失败: {str(e)}")
                 
-                return {"text": response}
+                return {
+                    "command": recognized_text,
+                    "text": response
+                        }
             
             # 未匹配到指令，返回原始识别文本
-            return {"text": recognized_text}
+            return {
+                "command": recognized_text,
+                "text": recognized_text
+                }
         finally:
             # 确保临时文件被删除
             if os.path.exists(tmp_path):
@@ -365,7 +288,6 @@ async def speech_to_text(audio: UploadFile = File(...)):
                     os.unlink(tmp_path)
                 except Exception as e:
                     logger.warning(f"删除临时文件失败: {str(e)}")
->>>>>>> 62effe859db61d14a57a1080e47ac7b58925e3c5
     except Exception as e:
         logger.error(f"语音识别错误: {str(e)}")
         raise HTTPException(

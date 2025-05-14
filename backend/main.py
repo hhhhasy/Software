@@ -14,14 +14,13 @@ import mediapipe as mp
 from flask import Flask, jsonify, request
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, Integer, String, DateTime, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from datetime import datetime
 
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:Aaa041082@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:Dskl930%40@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -33,6 +32,7 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     password = Column(String(255), nullable=False)  # 明文存储
     role = Column(String(20), nullable=False, default="user")
+
 
 # Pydantic 模式
 class UserLogin(BaseModel):

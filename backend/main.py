@@ -34,7 +34,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:Dskl930%40@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:Aaa041082@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -112,7 +112,7 @@ def get_whisper_model():
     if whisper_model is None:
         try:
             logger.info("正在加载Whisper模型...")
-            whisper_model = whisper.load_model("turbo")  # 使用small模型提高速度
+            whisper_model = whisper.load_model("small")  # 使用small模型提高速度
             logger.info("Whisper模型加载完成")
         except Exception as e:
             logger.error(f"加载Whisper模型失败: {e}")

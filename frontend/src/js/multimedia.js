@@ -2,13 +2,19 @@
  * 多媒体处理模块 - 语音、视频和手势处理
  */
 
+
 function handleVoiceCommand(commandText) {
   commandText = commandText.trim();
 
-  if (commandText.includes("播放音乐")) {
-    document.getElementById('playPauseBtn')?.click();
+  if (commandText.includes("为您播放默认播放列表")) {
+    document.getElementById('audioTrack').play();
     alert("🎵 已播放音乐");
-  } else {
+  } 
+  else if (commandText.includes("音乐播放已暂停")) {
+    document.getElementById('audioTrack').pause();
+    alert("🎵 已暂停音乐");
+  }
+  else {
     alert("未识别的指令：" + commandText);
   }
 }
@@ -50,7 +56,7 @@ async function toggleRecording() {
 
           const { command, text } = await response.json();
           alert(text);
-          handleVoiceCommand(command);
+          handleVoiceCommand(text);
         } catch (err) {
           console.error('语音识别错误:', err);
           alert('语音识别失败: ' + (err.detail || '服务器错误'));

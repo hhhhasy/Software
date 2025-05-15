@@ -5,13 +5,14 @@ import session from '../utils/session.js';
  */
 function initMusicPlayer() {
   const audio    = document.getElementById('audioTrack');
-  const icon     = document.getElementById('musicIcon');
   const playBtn  = document.getElementById('playPauseBtn');
   const stopBtn  = document.getElementById('stopBtn');
   const ppIcon   = document.getElementById('ppIcon');
-  const ppText   = document.getElementById('ppText');
   const prevBtn  = document.getElementById('prevBtn');
   const nextBtn  = document.getElementById('nextBtn');
+  const progressFill = document.querySelector('.music-player-card .progress-fill');
+  const currentTime = document.querySelector('.time-current');
+  const totalTime = document.querySelector('.time-total');
 
   if (!audio) return;
 
@@ -33,14 +34,38 @@ function initMusicPlayer() {
 
   function updateUI(isPlaying) {
     if (isPlaying) {
-      icon.classList.add('rotating');
-      ppIcon.textContent = '⏸️';
-      ppText.textContent = '暂停';
+      ppIcon.classList.remove('fa-play');
+      ppIcon.classList.add('fa-pause');
     } else {
-      icon.classList.remove('rotating');
-      ppIcon.textContent = '▶️';
-      ppText.textContent = '播放';
+      ppIcon.classList.remove('fa-pause');
+      ppIcon.classList.add('fa-play');
     }
+    
+    // 高亮当前歌曲
+    document.querySelectorAll('.song-item').forEach((item, idx) => {
+      if (idx === currentIndex) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+  
+  // 更新进度条和时间
+  function updateProgress() {
+    if (!audio.duration) return;
+    
+    const percent = (audio.currentTime / audio.duration) * 100;
+    progressFill.style.width = `${percent}%`;
+    
+    // 更新时间显示
+    const currentMinutes = Math.floor(audio.currentTime / 60);
+    const currentSeconds = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+    currentTime.textContent = `${currentMinutes}:${currentSeconds}`;
+    
+    const totalMinutes = Math.floor(audio.duration / 60);
+    const totalSeconds = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+    totalTime.textContent = `${totalMinutes}:${totalSeconds}`;
   }
 
   // 播放/暂停按钮
@@ -54,14 +79,18 @@ function initMusicPlayer() {
     }
   });
 
-  // 点击音符图标
-  icon.addEventListener('click', () => playBtn.click());
+  // 点击专辑图标
+  const albumCover = document.querySelector('.album-cover');
+  if (albumCover) {
+    albumCover.addEventListener('click', () => playBtn.click());
+  }
 
   // 停止按钮
   stopBtn.addEventListener('click', () => {
     audio.pause();
     audio.currentTime = 0;
     updateUI(false);
+    updateProgress();
   });
 
   // 上一首/下一首
@@ -78,7 +107,22 @@ function initMusicPlayer() {
   });
 
   // 音乐结束事件
-  audio.addEventListener('ended', () => updateUI(false));
+  audio.addEventListener('ended', () => {
+    nextBtn.click(); // 自动播放下一首
+  });
+  
+  // 更新进度条
+  audio.addEventListener('timeupdate', updateProgress);
+  
+  // 点击播放列表项
+  document.querySelectorAll('.song-item').forEach((item, idx) => {
+    item.addEventListener('click', () => {
+      currentIndex = idx;
+      loadTrack(currentIndex);
+      audio.play();
+      updateUI(true);
+    });
+  });
 
   // 初始加载第一首
   loadTrack(currentIndex);
@@ -88,43 +132,214 @@ function initMusicPlayer() {
  * 初始化标签页切换
  */
 function initTabSwitching() {
-  const navBtns = document.querySelectorAll('.sidebar button');
+  const navItems = document.querySelectorAll('.nav-item');
   const panels = document.querySelectorAll('.panel');
   
-  if (!navBtns.length) return;
+  if (!navItems.length) return;
 
-  // 定义标签切换处理函数
-  function switchTab(buttonId) {
-    // 处理按钮激活状态
-    navBtns.forEach(b => b.classList.remove('active'));
-    document.getElementById(buttonId)?.classList.add('active');
+  function switchTab(element) {
+    const targetPanelId = element.getAttribute('data-panel');
     
-    // 隐藏所有面板
-    panels.forEach(p => p.classList.add('hidden'));
+    // 移除所有激活状态
+    navItems.forEach(item => item.classList.remove('active'));
+    panels.forEach(panel => panel.classList.remove('active'));
     
-    // 显示对应面板
-    switch (buttonId) {
-      case 'navDriving':
-        document.getElementById('panelDrivingStatus')?.classList.remove('hidden');
-        break;
-      case 'navMultimodal':
-        document.getElementById('panelMultimodal')?.classList.remove('hidden');
-        break;
-      case 'navMusic':
-        document.getElementById('panelMusic')?.classList.remove('hidden');
-        break;
-    }
+    // 设置当前激活状态
+    element.classList.add('active');
+    document.getElementById(targetPanelId)?.classList.add('active');
   }
 
-  // 添加按钮点击事件监听器
-  navBtns.forEach(btn => btn.addEventListener('click', () => {
-    switchTab(btn.id);
-  }));
+  // 添加点击事件监听器
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      switchTab(item);
+    });
+  });
   
-  // 初始化 - 确保页面加载时显示正确的面板
-  // 查找当前激活的标签，或默认使用第一个标签
-  const activeBtn = document.querySelector('.sidebar button.active') || navBtns[0];
-  switchTab(activeBtn.id);
+  // 初始化 - 默认激活第一个标签
+  const activeItem = document.querySelector('.nav-item.active') || navItems[0];
+  switchTab(activeItem);
+}
+
+/**
+ * 初始化语音控制功能
+ */
+function initVoiceControl() {
+  const voiceBtn = document.getElementById('voiceBtn');
+  const voiceOutput = document.getElementById('textInput');
+  const voiceWaves = document.querySelectorAll('.voice-wave');
+  
+  if (!voiceBtn) return;
+  
+  let isRecording = false;
+  
+  voiceBtn.addEventListener('click', () => {
+    isRecording = !isRecording;
+    
+    if (isRecording) {
+      voiceBtn.classList.add('recording');
+      voiceBtn.innerHTML = '<i class="fas fa-microphone-slash"></i><span>点击停止</span>';
+      voiceOutput.textContent = '正在聆听...';
+      
+      // 为波形添加动画
+      voiceWaves.forEach((wave, index) => {
+        wave.style.height = '20px';
+        wave.style.width = '4px';
+        wave.style.opacity = '1';
+        wave.style.animation = `voiceWave 1s ease-in-out ${index * 0.1}s infinite alternate`;
+      });
+      
+      // 这里添加实际的语音识别逻辑
+      
+    } else {
+      voiceBtn.classList.remove('recording');
+      voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>按下说话</span>';
+      voiceOutput.textContent = '语音识别已停止';
+      
+      // 停止波形动画
+      voiceWaves.forEach(wave => {
+        wave.style.height = '3px';
+        wave.style.width = '3px';
+        wave.style.animation = 'none';
+      });
+    }
+  });
+  
+  // 添加波形动画样式
+  const styleElement = document.createElement('style');
+  styleElement.innerHTML = `
+    @keyframes voiceWave {
+      0% { height: 5px; }
+      50% { height: 20px; }
+      100% { height: 5px; }
+    }
+  `;
+  document.head.appendChild(styleElement);
+}
+
+/**
+ * 初始化进度环动画
+ */
+function initSpeedometer() {
+  const speedRing = document.getElementById('speedRing');
+  const currentSpeed = document.getElementById('currentSpeed');
+  
+  if (!speedRing || !currentSpeed) return;
+  
+  // 获取圆环周长
+  const radius = speedRing.getAttribute('r');
+  const circumference = 2 * Math.PI * radius;
+  
+  // 设置描边长度等于周长
+  speedRing.style.strokeDasharray = `${circumference} ${circumference}`;
+  
+  // 更新速度表盘
+  function updateSpeedometer(speed) {
+    // 假设最大速度为200
+    const maxSpeed = 200;
+    const percent = Math.min(speed / maxSpeed, 1);
+    const offset = circumference - percent * circumference;
+    
+    // 设置偏移量实现填充效果
+    speedRing.style.strokeDashoffset = offset;
+    currentSpeed.textContent = speed;
+    
+    // 根据速度变化颜色
+    if (speed > 120) {
+      speedRing.style.stroke = 'var(--danger)';
+    } else if (speed > 80) {
+      speedRing.style.stroke = 'var(--warning)';
+    } else {
+      speedRing.style.stroke = 'var(--primary)';
+    }
+  }
+  
+  // 初始化速度值
+  updateSpeedometer(65);
+  
+  // 模拟速度变化
+  let count = 0;
+  setInterval(() => {
+    count++;
+    // 模拟速度在40-100之间波动
+    const speed = 55 + Math.sin(count / 10) * 15;
+    updateSpeedometer(Math.round(speed));
+  }, 1000);
+}
+
+/**
+ * 初始化燃油表
+ */
+function initFuelGauge() {
+  const fuelBar = document.getElementById('fuelBar');
+  const fuelLevel = document.getElementById('fuelLevel');
+  
+  if (!fuelBar || !fuelLevel) return;
+  
+  // 模拟燃油量逐渐减少
+  let fuel = 75;
+  setInterval(() => {
+    fuel -= 0.1;
+    if (fuel < 0) fuel = 75; // 重置
+    
+    fuelBar.style.width = `${fuel}%`;
+    fuelLevel.textContent = Math.round(fuel);
+    
+    // 根据燃油量变化颜色
+    if (fuel < 20) {
+      fuelBar.style.background = 'linear-gradient(90deg, var(--danger), #ff7675)';
+    } else if (fuel < 40) {
+      fuelBar.style.background = 'linear-gradient(90deg, var(--warning), #ffd166)';
+    } else {
+      fuelBar.style.background = 'linear-gradient(90deg, var(--primary), var(--secondary))';
+    }
+  }, 1000);
+}
+
+/**
+ * 初始化系统时间
+ */
+function initSystemTime() {
+  const timeElement = document.getElementById('systemTime');
+  
+  if (!timeElement) return;
+  
+  function updateTime() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+  }
+  
+  // 立即更新一次
+  updateTime();
+  
+  // 每秒更新一次
+  setInterval(updateTime, 1000);
+}
+
+/**
+ * 初始化天气动画
+ */
+function initWeatherAnimation() {
+  const weatherElements = document.querySelectorAll('.weather-icon');
+  
+  weatherElements.forEach(icon => {
+    // 添加悬浮动画
+    icon.style.animation = 'weatherFloat 3s ease-in-out infinite alternate';
+  });
+  
+  // 添加天气动画样式
+  const styleElement = document.createElement('style');
+  styleElement.innerHTML = `
+    @keyframes weatherFloat {
+      0% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-5px) rotate(5deg); }
+      100% { transform: translateY(0) rotate(0); }
+    }
+  `;
+  document.head.appendChild(styleElement);
 }
 
 /**
@@ -154,6 +369,38 @@ function displayUserInfo() {
 }
 
 /**
+ * 添加卡片悬浮效果
+ */
+function initCardHoverEffects() {
+  const cards = document.querySelectorAll('.card');
+  
+  cards.forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // 根据鼠标位置计算倾斜角度
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = (y - centerY) / 20;
+      const rotateY = (centerX - x) / 20;
+      
+      // 应用3D变换
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`;
+    });
+    
+    card.addEventListener('mouseleave', () => {
+      // 重置变换
+      card.style.transform = 'translateY(-3px)';
+      setTimeout(() => {
+        card.style.transform = '';
+      }, 300);
+    });
+  });
+}
+
+/**
  * 初始化主界面
  */
 function initHomePage() {
@@ -161,6 +408,16 @@ function initHomePage() {
   initLogout();
   initTabSwitching();
   initMusicPlayer();
+  initVoiceControl();
+  initSpeedometer();
+  initFuelGauge();
+  initSystemTime();
+  initWeatherAnimation();
+  
+  // 只在桌面端启用卡片悬浮特效
+  if (window.innerWidth > 768) {
+    initCardHoverEffects();
+  }
 }
 
 // 页面加载完成后初始化

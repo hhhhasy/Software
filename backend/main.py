@@ -5,16 +5,24 @@ import tempfile
 import re
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
+from sqlalchemy import Column, Integer, String, DateTime, create_engine
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import whisper
 import pyttsx3
 import cv2
+import json
 import numpy as np
 import joblib
 import mediapipe as mp
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from fastapi.middleware.cors import CORSMiddleware  # ✅ 必须有这行
+from zhipu import call_zhipu_chat  # 确保模块路径正确
+from sqlalchemy.orm.exc import NoResultFound
+
+
 
 
 # ============= 日志配置 =============
@@ -31,6 +39,8 @@ logger = logging.getLogger("api")
 # ============= 配置 =============
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model')
 os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
+
+
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
@@ -56,6 +66,7 @@ class UserRegister(UserLogin):
     confirm_password: str
 
 class LoginResponse(BaseModel):
+    id: int
     role: str
 
 class MessageResponse(BaseModel):
@@ -79,6 +90,21 @@ class LogEntry(BaseModel):
 class LogResponse(BaseModel):
     logs: List[LogEntry]
     total_entries: int
+
+class AIResponse(BaseModel):
+    chatmessage:str
+
+
+class ChatRequest(BaseModel):
+    messages: List[Dict[str, str]]  # e.g. [{"role": "user", "content": "你是谁？"}]
+
+
+class UserMemory(Base):
+    __tablename__ = "user_chat_memory"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, nullable=False)
+    content = Column(String(length=10000), nullable=False)  # JSON格式
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # ============= 应用初始化 =============
 app = FastAPI(
@@ -202,7 +228,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
             )
         
         logger.info(f"用户 {user.username} 角色 {db_user.role} 登录成功")
-        return {"role": db_user.role}
+        return {"id": db_user.id,"role": db_user.role}
     except HTTPException:
         raise
     except Exception as e:
@@ -247,7 +273,7 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
         )
 
 @app.post("/api/speech-to-text", response_model=SpeechResponse)
-async def speech_to_text(audio: UploadFile = File(...)):
+async def speech_to_text( request: Request,audio: UploadFile = File(...),db: Session = Depends(get_db)) -> Dict[str, str]:
     """
     语音转文本API，识别语音指令并执行相应操作
     """
@@ -285,11 +311,40 @@ async def speech_to_text(audio: UploadFile = File(...)):
                     "text": response
                         }
             
-            # 未匹配到指令，返回原始识别文本
+            # 如果未匹配任何预设指令，则调用大模型进行回答
+            logger.info("未匹配到预设指令，交给大模型处理")
+            ai_reply = await call_zhipu_chat([
+                {"role": "user", "content": recognized_text}
+            ])
+            user_id_str = request.headers.get("X-User-ID")
+            if not user_id_str or not user_id_str.isdigit():
+                raise HTTPException(status_code=400, detail="缺少或非法的用户 ID")
+            user_id = int(user_id_str)
+            
+            try:
+                memory = db.query(UserMemory).filter(UserMemory.user_id == user_id).one()
+                history = json.loads(memory.content)
+            except NoResultFound:
+                history = []
+                memory = UserMemory(user_id=user_id, content="[]")
+
+            # 将当前请求的对话追加到历史中
+            history.append({"role": "user", "content": recognized_text})
+            history.append({"role": "assistant", "content": ai_reply})
+            memory.content = json.dumps(history, ensure_ascii=False)
+            db.merge(memory)
+            db.commit()
+            
+            
+            # 可选：语音播报大模型回答
+            tts_engine.say(ai_reply)
+            tts_engine.runAndWait()
+
             return {
-                "command": recognized_text,
-                "text": recognized_text
-                }
+                    "command": recognized_text,
+                    "text": ai_reply
+            }
+
         finally:
             # 确保临时文件被删除
             if os.path.exists(tmp_path):
@@ -738,6 +793,45 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"无法读取日志: {str(e)}"
         )
+
+@app.post("/api/zhipu-chat",response_model=AIResponse)
+async def zhipu_chat( req: ChatRequest,request: Request, db: Session = Depends(get_db)):
+    try:
+        user_id_str = request.headers.get("X-User-ID")
+        if not user_id_str:
+            raise HTTPException(status_code=400, detail="缺少用户 ID")
+        user_id = int(user_id_str)
+        # 尝试读取该用户历史记录
+        try:
+            memory = db.query(UserMemory).filter(UserMemory.user_id == user_id).one()
+            history = json.loads(memory.content)
+        except NoResultFound:
+            history = []
+            memory = UserMemory(user_id=user_id, content="[]")
+
+        # 将当前请求的对话追加到历史中
+        history.extend(req.messages)
+
+        # # 控制长度（例如最多保留20条）
+        # MAX_HISTORY = 20
+        # if len(history) > MAX_HISTORY:
+        #     history = history[-MAX_HISTORY:]
+
+        # 调用大模型
+        reply = await call_zhipu_chat(history)
+
+        # 添加 assistant 回复
+        history.append({"role": "assistant", "content": reply})
+
+        # 写回数据库
+        memory.content = json.dumps(history, ensure_ascii=False)
+        db.merge(memory)
+        db.commit()
+
+        return {"reply": reply}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"调用大模型失败: {str(e)}")
 
 # ============= 应用启动 =============
 if __name__ == "__main__":

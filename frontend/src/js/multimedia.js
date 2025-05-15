@@ -1,7 +1,8 @@
 /**
  * 多媒体处理模块 - 语音、视频和手势处理
  */
-
+// 会话状态管理
+import session from '../utils/session.js';
 
 function handleVoiceCommand(commandText) {
   commandText = commandText.trim();
@@ -13,9 +14,6 @@ function handleVoiceCommand(commandText) {
   else if (commandText.includes("音乐播放已暂停")) {
     document.getElementById('audioTrack').pause();
     alert("🎵 已暂停音乐");
-  }
-  else {
-    alert("未识别的指令：" + commandText);
   }
 }
 
@@ -47,8 +45,13 @@ async function toggleRecording() {
         formData.append('audio', audioBlob, 'recording.wav');
 
         try {
+          const currentUser = session.get('currentUser')
           const response = await fetch('http://localhost:8000/api/speech-to-text', {
             method: 'POST',
+            headers: {
+              'X-User-ID': currentUser?.id   // 从登录状态中获得
+            },
+
             body: formData
           });
 

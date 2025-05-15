@@ -29,15 +29,23 @@ async function toggleRecording() {
         formData.append('audio', audioBlob, 'recording.wav');
         
         try {
+          const currentUser = session.get('currentUser')
           const response = await fetch('http://localhost:8000/api/speech-to-text', {
             method: 'POST',
+            headers: {
+              'X-User-ID': currentUser?.id   // 从登录状态中获得
+            },
+
             body: formData
           });
           
           if (!response.ok) throw await response.json();
           
           const { text } = await response.json();
-          alert(text);
+          //alert(text);
+          // 显示回复
+          document.getElementById("chatOutput").textContent = "💬 模型回复：" + text;
+
         } catch (err) {
           console.error('语音识别错误:', err);
           alert('语音识别失败: ' + (err.detail || '服务器错误'));
@@ -86,9 +94,10 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
 
     if (!response.ok) throw await response.json()
     
-    const { role } = await response.json()
-    session.set('currentUser', { username, role })
-    
+    //const { role } = await response.json()
+    const { id,role } = await response.json()
+    //session.set('currentUser', { username, role })
+    session.set('currentUser', { id,username, role })
     window.location.href = role === 'admin' ? 'admin.html' : 'home.html'
   } catch (err) {
     alert(err.detail || '登录失败')
@@ -190,8 +199,6 @@ async function processGesture() {
   }
 }
 
-// 初始化上下文，包括系统提示词（固定不变）
-let conversation = [];
 
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const inputBox = document.getElementById("textInput");
@@ -205,15 +212,17 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   inputBox.disabled = true;
 
   // 添加当前用户发言到上下文中
-  conversation.push({ role: "user", content: input });
+  //conversation.push({ role: "user", content: input });
+  const currentUser = session.get('currentUser')
 
   try {
     const response = await fetch("http://localhost:8000/api/zhipu-chat", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-User-ID": currentUser.id.toString()  // ← 添加这行！
       },
-      body: JSON.stringify({ messages: conversation })  // 发送整个对话历史
+      body: JSON.stringify({  messages: [{ role: "user", content: input }] })  // 发送整个对话历史
     });
 
     const data = await response.json();
@@ -222,7 +231,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       const reply = data.reply;
 
       // 将回复加入上下文
-      conversation.push({ role: "assistant", content: reply });
+      //conversation.push({ role: "assistant", content: reply });
 
       // 显示回复
       document.getElementById("chatOutput").textContent = "💬 模型回复：" + reply;

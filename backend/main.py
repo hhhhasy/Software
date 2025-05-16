@@ -44,7 +44,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:Aaa041082@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:zhyf040216@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -105,6 +105,17 @@ class UserMemory(Base):
     user_id = Column(Integer, unique=True, nullable=False)
     content = Column(String(length=10000), nullable=False)  # JSON格式
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    password: str
+    role: str
 
 # ============= 应用初始化 =============
 app = FastAPI(
@@ -683,6 +694,75 @@ async def get_users(db: Session = Depends(get_db)):
             detail="获取用户信息失败"
         )
 
+@app.get("/api/users/{user_id}", response_model=UserResponse)
+async def read_user(user_id: int, db: Session = Depends(get_db)):
+    """获取单个用户信息"""
+    try:
+        db_user = db.query(User).filter(User.id == user_id).first()
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        return db_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取用户信息失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取用户信息时发生错误"
+        )
+
+@app.put("/api/users/{user_id}", response_model=MessageResponse)
+async def update_user(user_id: int,user_data: UserUpdate,db: Session = Depends(get_db)):
+    """更新用户信息"""
+    try:
+        db_user = db.query(User).filter(User.id == user_id).first()
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 更新用户信息
+        if user_data.username:
+            # 检查用户名是否已存在
+            existing_user = db.query(User).filter(
+                User.username == user_data.username,
+                User.id != user_id
+            ).first()
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="用户名已存在"
+                )
+            db_user.username = user_data.username
+        if user_data.password:
+            db_user.password = user_data.password  
+        if user_data.role:
+            if user_data.role not in ["admin", "user", "driver", "maintenance_personne"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="无效的角色值"
+                )
+            db_user.role = user_data.role
+        
+        db.commit()
+        db.refresh(db_user)
+        
+        logger.info(f"用户ID: {user_id} 信息已更新")
+        return {"message": "用户信息更新成功"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"更新用户信息失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新用户信息时发生错误"
+        )
+
 @app.delete("/api/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
     """删除用户"""
@@ -693,7 +773,14 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="用户不存在"
             )
-        
+
+        # 检查是否删除自己
+        if user.id == current_user.id:
+            logger.warning(f"用户ID: {user_id} 尝试删除自己")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="不能删除自己"
+            )
         db.delete(user)
         db.commit()
         logger.info(f"用户ID: {user_id}, 用户名: {user.username} 已被删除")

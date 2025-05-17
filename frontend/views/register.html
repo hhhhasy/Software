@@ -2,7 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能车载系统 - 注册</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="../src/css/base.css">
     <link rel="stylesheet" href="../src/css/auth.css">
     <link rel="stylesheet" href="../src/css/auth-messages.css">
@@ -10,25 +12,25 @@
 <body>
     <div class="auth-container">
         <div class="header">
-            <h1>用户注册</h1>
+            <h1><i class="fas fa-user-plus"></i> 用户注册</h1>
             <div class="neon-line"></div>
         </div>
         
         <form id="registerForm">
             <div class="input-group">
                 <input type="text" id="newUsername" placeholder="用户名" required>
-                <span class="input-icon">👤</span>
+                <span class="input-icon"><i class="fas fa-user"></i></span>
             </div>
             <div class="input-group">
                 <input type="password" id="newPassword" placeholder="密码" required>
-                <span class="input-icon">🔒</span>
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
             </div>
             <div class="input-group">
                 <input type="password" id="confirmPassword" placeholder="确认密码" required>
-                <span class="input-icon">🔑</span>
+                <span class="input-icon"><i class="fas fa-key"></i></span>
             </div>
-            <button type="submit">立即注册</button>
-            <p class="switch-auth">已有账号？<a href="login.html">立即登录</a></p>
+            <button type="submit"><i class="fas fa-user-check"></i> 立即注册</button>
+            <p class="switch-auth">已有账号？<a href="login.html">立即登录 <i class="fas fa-arrow-right"></i></a></p>
         </form>
     </div>
     <script type="module" src="../src/js/auth.js"></script>

@@ -349,8 +349,11 @@ function initLogout() {
   const logoutBtn = document.getElementById('logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      session.clear();
-      window.location.href = 'login.html';
+      // 先移除特定的会话数据，而不是清除所有localStorage
+      session.remove('currentUser');
+      session.remove('lastActivity');
+      // 使用replace而不是href，确保完全重新加载页面
+      window.location.replace('login.html');
     });
   }
 }

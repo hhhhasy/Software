@@ -92,7 +92,7 @@ function bindEvents() {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
         localStorage.removeItem('role');
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
     });
 
     // 模态框事件

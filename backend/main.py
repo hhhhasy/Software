@@ -62,6 +62,7 @@ class MessageResponse(BaseModel):
     message: str
 
 class SpeechResponse(BaseModel):
+    command: str
     text: str
 
 class VideoResponse(BaseModel):
@@ -186,6 +187,44 @@ def get_command_response(text: str) -> Optional[str]:
     
     return None
 
+
+import subprocess
+import os
+
+def convert_to_whisper_format(input_path, output_path=None):
+    """
+    使用 ffmpeg 将音频文件转换为 Whisper 推荐的格式（16kHz、mono、wav）
+
+    参数:
+    - input_path: 原始音频文件路径
+    - output_path: 转换后文件保存路径，默认在原路径后添加 '_converted.wav'
+
+    返回:
+    - output_path: 转换后的音频文件路径
+    """
+    if output_path is None:
+        output_path = input_path.replace('.wav', '_converted.wav')
+
+    # 确保输入文件存在
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"找不到音频文件: {input_path}")
+
+    command = [
+        'ffmpeg', '-y',                # -y 自动覆盖
+        '-i', input_path,              # 输入文件
+        '-ar', '16000',                # 设置采样率 16kHz
+        '-ac', '1',                    # 设置为单声道
+        '-f', 'wav',                   # 输出格式为 WAV
+        output_path
+    ]
+
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"音频转换失败: {e}")
+    return output_path
+
+
 # ============= API路由定义 =============
 
 # API 路由：登录
@@ -259,11 +298,11 @@ async def speech_to_text(audio: UploadFile = File(...)):
             tmp_path = tmp.name
         
         logger.info("临时音频文件已保存，开始进行语音识别")
-        
         try:
             # 获取模型并进行语音识别
             model = get_whisper_model()
-            result = model.transcribe(tmp_path, language='zh')
+            converted_path = convert_to_whisper_format(tmp_path)
+            result = model.transcribe(converted_path, language='zh')
             recognized_text = result["text"]
             logger.info(f"语音识别结果: {recognized_text}")
             

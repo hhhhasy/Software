@@ -27,10 +27,10 @@ async function handleLogin(e) {
       throw errorData;
     }
     
-    const { role } = await response.json();
+    const {id, role} = await response.json();
     
     // 使用新的会话存储方式，添加时间戳
-    session.set('currentUser', { username, role });
+    session.set('currentUser', { id,username, role })
     session.set('lastActivity', Date.now());
     
     // 基于角色重定向

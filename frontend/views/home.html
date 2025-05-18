@@ -3,172 +3,643 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能交互中心 | NeuroDrive</title>
-    <link rel="stylesheet" href="../src/css/base.css">
+    <title>智能驾驶舱 | NeuroDrive</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../src/css/home.css">
-    <!-- 添加 Font Awesome 图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 顶部导航 -->
-    <nav class="main-nav">
-        <h2>NeuroDrive 智能交互系统</h2>
-        <div class="user-info">
-            <span id="currentUser">驾驶员：未登录</span>
-            <button id="logout">退出登录</button>
+    <!-- 驾驶舱顶部导航栏 -->
+    <header class="dashboard-header">
+        <div class="brand">
+            <i class="fas fa-car-rear"></i>
+            <h1>NeuroDrive</h1>
         </div>
-    </nav>
+        <div class="header-tools">
+            <div class="system-time" id="systemTime">00:00:00</div>
+            <div class="weather-widget">
+                <i class="fas fa-sun"></i>
+                <span id="temperature">24°C</span>
+            </div>
+            <div class="user-profile">
+                <span id="currentUser">驾驶员：未登录</span>
+                <button id="logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>退出</span>
+                </button>
+            </div>
+        </div>
+    </header>
 
     <!-- 主内容区域 -->
-    <div class="container">
-        <!-- 侧边栏 -->
-        <div class="sidebar">
-            <button id="navDriving" class="active">
-                <i class="fas fa-car"></i> 驾驶状态
-            </button>
-            <button id="navMultimodal">
-                <i class="fas fa-microphone"></i> 多模态控制
-            </button>
-            <button id="navMusic">
-                <i class="fas fa-music"></i> 音乐娱乐
-            </button>
-        </div>
+    <main class="dashboard-container">
+        <!-- 导航侧边栏 -->
+        <nav class="dashboard-sidebar">
+            <div class="nav-item active" data-panel="drivingPanel">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>驾驶状态</span>
+            </div>
+            <div class="nav-item" data-panel="controlPanel">
+                <i class="fas fa-microphone-alt"></i>
+                <span>智能控制</span>
+            </div>
+            <div class="nav-item" data-panel="mediaPanel">
+                <i class="fas fa-music"></i>
+                <span>媒体中心</span>
+            </div>
+            <div class="nav-item" data-panel="settingsPanel">
+                <i class="fas fa-sliders-h"></i>
+                <span>系统设置</span>
+            </div>
+        </nav>
 
-        <!-- 内容区 -->
-        <div class="content">
+        <!-- 内容面板区域 -->
+        <div class="dashboard-content">
             <!-- 驾驶状态面板 -->
-            <div id="panelDrivingStatus" class="panel">
-                <h3 class="panel-title">驾驶状态与环境信息</h3>
+            <section class="panel active" id="drivingPanel">
+                <h2 class="panel-title">
+                    <i class="fas fa-tachometer-alt"></i>
+                    驾驶状态监控
+                    <span class="status-badge online">
+                        <i class="fas fa-circle"></i> 系统在线
+                    </span>
+                </h2>
                 
-                <div class="driving-weather-grid">
-                    <!-- 行驶状态卡片 -->
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-tachometer-alt"></i> 行驶状态</h3>
+                <div class="stats-overview">
+                    <div class="stat-card highlight">
+                        <div class="stat-icon">
+                            <i class="fas fa-gauge-high"></i>
                         </div>
-                        
-                        <div class="status-grid">
-                            <div class="statusBox">
-                                <i class="fas fa-gauge"></i>
-                                <div>车速: 60 km/h</div>
+                        <div class="stat-data">
+                            <div class="stat-value" id="currentSpeed">65</div>
+                            <div class="stat-label">当前车速</div>
+                            <div class="stat-unit">km/h</div>
+                        </div>
+                        <svg class="progress-ring" width="120" height="120">
+                            <circle class="progress-ring-bg" cx="60" cy="60" r="54" />
+                            <circle class="progress-ring-circle" cx="60" cy="60" r="54" id="speedRing" />
+                        </svg>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-gas-pump"></i>
+                        </div>
+                        <div class="stat-data">
+                            <div class="stat-value" id="fuelLevel">75</div>
+                            <div class="stat-label">燃油量</div>
+                            <div class="stat-unit">%</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="fuelBar" style="width: 75%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-road"></i>
+                        </div>
+                        <div class="stat-data">
+                            <div class="stat-value" id="mileage">12,568</div>
+                            <div class="stat-label">总里程</div>
+                            <div class="stat-unit">km</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <div class="stat-data">
+                            <div class="stat-value">正常</div>
+                            <div class="stat-label">发动机温度</div>
+                        </div>
+                        <div class="indicator normal">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-row">
+                    <div class="card vehicle-status">
+                        <h3 class="card-title">
+                            <i class="fas fa-car"></i> 车辆状态检查
+                        </h3>
+                        <div class="status-items">
+                            <div class="status-item">
+                                <div class="status-label">引擎状态</div>
+                                <div class="status-value normal">正常运行</div>
                             </div>
-                            <div class="statusBox">
-                                <i class="fas fa-gas-pump"></i>
-                                <div>油量: 65%</div>
+                            <div class="status-item">
+                                <div class="status-label">轮胎气压</div>
+                                <div class="status-value normal">36 PSI</div>
                             </div>
-                            <div class="statusBox">
-                                <i class="fas fa-temperature-half"></i>
-                                <div>引擎温度: 正常</div>
+                            <div class="status-item">
+                                <div class="status-label">制动系统</div>
+                                <div class="status-value normal">正常</div>
                             </div>
-                            <div class="statusBox">
-                                <i class="fas fa-road"></i>
-                                <div>里程: 12,345 km</div>
+                            <div class="status-item">
+                                <div class="status-label">安全系统</div>
+                                <div class="status-value normal">全部在线</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">电池电量</div>
+                                <div class="status-value normal">92%</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">下次保养</div>
+                                <div class="status-value warning">距离 520 km</div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- 天气信息卡片 -->
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-cloud-sun"></i> 天气信息</h3>
-                        </div>
-                        
-                        <div class="weather-content">
-                            <div class="weather-icon">
-                                <i class="fas fa-sun"></i>
+                    <div class="card weather-forecast">
+                        <h3 class="card-title">
+                            <i class="fas fa-cloud-sun"></i> 天气与路况信息
+                        </h3>
+                        <div class="weather-display">
+                            <div class="current-weather">
+                                <i class="fas fa-sun weather-icon"></i>
+                                <div class="weather-info">
+                                    <div class="weather-temp">24°C</div>
+                                    <div class="weather-desc">晴朗</div>
+                                    <div class="weather-location">
+                                        <i class="fas fa-map-marker-alt"></i> 北京市
+                                    </div>
+                                </div>
                             </div>
-                            <div class="weather-details">
-                                <div class="weather-temp">24°C</div>
-                                <div class="weather-desc">晴朗</div>
-                                <div class="weather-location">北京市</div>
+                            <div class="weather-forecast-items">
+                                <div class="forecast-item">
+                                    <div class="forecast-day">今天</div>
+                                    <i class="fas fa-sun"></i>
+                                    <div class="forecast-temp">24°C</div>
+                                </div>
+                                <div class="forecast-item">
+                                    <div class="forecast-day">明天</div>
+                                    <i class="fas fa-cloud-sun"></i>
+                                    <div class="forecast-temp">23°C</div>
+                                </div>
+                                <div class="forecast-item">
+                                    <div class="forecast-day">后天</div>
+                                    <i class="fas fa-cloud"></i>
+                                    <div class="forecast-temp">21°C</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="road-condition">
+                            <h4><i class="fas fa-road"></i> 当前路况</h4>
+                            <div class="road-status normal">
+                                <i class="fas fa-check-circle"></i> 道路通畅，无交通拥堵
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 多模态控制面板 -->
-            <div id="panelMultimodal" class="panel hidden">
-                <h3 class="panel-title">多模态交互控制</h3>
-                
-                <div class="card">
-                    <div class="neon-header">
-                        <h3><i class="fas fa-microphone"></i> 语音交互</h3>
-                    </div>
-                    
-                    <div class="input-section">
-                        <button id="voiceBtn" class="voice-btn">
-                            <i class="fas fa-microphone"></i> 语音指令输入
-                        </button>
-                        <textarea id="textInput" placeholder="语音识别结果将显示在这里..."></textarea>
-                    </div>
-                </div>
-                
-                <div class="interaction-grid">
+                <div class="dashboard-row">
                     <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-video"></i> 视频姿态监测</h3>
-                        </div>
-                        <div class="control-btn-group">
-                            <button id="videoBtn" class="control-btn">
-                                <i class="fas fa-camera"></i> 开始姿态监测
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="neon-header">
-                            <h3><i class="fas fa-hand"></i> 手势控制</h3>
-                        </div>
-                        <div class="control-btn-group">
-                            <button id="gestureBtn" class="control-btn">
-                                <i class="fas fa-hand-point-up"></i> 打开手势控制
+                        <h3 class="card-title">
+                            <i class="fas fa-route"></i> 导航状态
+                        </h3>
+                        <div class="navigation-display">
+                            <div class="navigation-summary">
+                                <div class="destination">
+                                    <div class="dest-label">目的地</div>
+                                    <div class="dest-value">未设置导航</div>
+                                </div>
+                                <div class="nav-details">
+                                    <div class="nav-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>预计到达时间</span>
+                                        <strong>--:--</strong>
+                                    </div>
+                                    <div class="nav-item">
+                                        <i class="fas fa-road"></i>
+                                        <span>剩余距离</span>
+                                        <strong>-- km</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-primary mt-2">
+                                <i class="fas fa-map-marked-alt"></i> 设置导航
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- 音乐播放器面板 -->
-            <div id="panelMusic" class="panel hidden">
-                <h3 class="panel-title">音乐娱乐系统</h3>
+            <!-- 智能控制面板 -->
+            <section class="panel" id="controlPanel">
+                <h2 class="panel-title">
+                    <i class="fas fa-microphone-alt"></i>
+                    智能交互控制
+                </h2>
                 
-                <div class="card">
-                    <div class="neon-header">
-                        <h3><i class="fas fa-music"></i> 音乐播放器</h3>
+                <div class="dashboard-row">
+                    <div class="card voice-control">
+                        <h3 class="card-title">
+                            <i class="fas fa-microphone"></i> 语音控制
+                        </h3>
+                        <div class="voice-interface">
+                            <div class="voice-visualization" id="voiceVisualization">
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                                <div class="voice-wave"></div>
+                            </div>
+                            <button id="voiceBtn" class="voice-btn">
+                                <i class="fas fa-microphone"></i>
+                                <span>按下说话</span>
+                            </button>
+                            <div class="voice-output">
+                                <div class="output-label">识别结果:</div>
+                                <div class="output-content" id="textInput">您好，我能为您做什么？</div>
+                                <div class="latest-command">
+                                    <i class="fas fa-history"></i>
+                                    <span>上次命令: 播放音乐</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="voice-commands">
+                            <h4>常用语音指令:</h4>
+                            <div class="command-chips">
+                                <div class="command-chip">打开空调</div>
+                                <div class="command-chip">播放音乐</div>
+                                <div class="command-chip">导航到家</div>
+                                <div class="command-chip">调低温度</div>
+                                <div class="command-chip">打开车窗</div>
+                                <div class="command-chip">设置目的地</div>
+                                <div class="command-chip">来电接听</div>
+                                <div class="command-chip">系统状态</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-row">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-video"></i> 驾驶员监测
+                        </h3>
+                        <div class="control-center">
+                            <div class="control-info">
+                                <i class="fas fa-eye"></i>
+                                <p>驾驶员状态监测可以检测疲劳驾驶、注意力分散等风险行为</p>
+                            </div>
+                            <div class="sensor-status">
+                                <div class="sensor-item">
+                                    <div class="sensor-icon"><i class="fas fa-head-side"></i></div>
+                                    <div class="sensor-data">
+                                        <div class="sensor-name">目光追踪</div>
+                                        <div class="sensor-value normal">正常</div>
+                                    </div>
+                                </div>
+                                <div class="sensor-item">
+                                    <div class="sensor-icon"><i class="fas fa-brain"></i></div>
+                                    <div class="sensor-data">
+                                        <div class="sensor-name">注意力监测</div>
+                                        <div class="sensor-value normal">98%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="videoBtn" class="btn-primary">
+                                <i class="fas fa-camera"></i>
+                                <span>开始监测</span>
+                            </button>
+                        </div>
                     </div>
                     
-                    <div class="music-player">
-                        <audio id="audioTrack" src="../assets/audio/song1.mp3"></audio>
-                        <i id="musicIcon" class="fas fa-music music-icon"></i>
-                        <div class="music-controls">
-                            <button id="prevBtn">
-                                <i class="fas fa-backward"></i> 上一曲
-                            </button>
-                            <button id="playPauseBtn">
-                                <i id="ppIcon" class="fas fa-play"></i>
-                                <span id="ppText">播放</span>
-                            </button>
-                            <button id="stopBtn">
-                                <i class="fas fa-stop"></i> 停止
-                            </button>
-                            <button id="nextBtn">
-                                <i class="fas fa-forward"></i> 下一曲
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-hand"></i> 手势识别
+                        </h3>
+                        <div class="control-center">
+                            <div class="control-info">
+                                <i class="fas fa-hand-point-up"></i>
+                                <p>通过手势可以控制音乐播放、接听电话等功能</p>
+                            </div>
+                            <div class="gesture-guide">
+                                <div class="gesture-item">
+                                    <div class="gesture-icon"><i class="fas fa-hand"></i></div>
+                                    <div class="gesture-desc">挥手 - 切换歌曲</div>
+                                </div>
+                                <div class="gesture-item">
+                                    <div class="gesture-icon"><i class="fas fa-hand-point-up"></i></div>
+                                    <div class="gesture-desc">指向 - 选择选项</div>
+                                </div>
+                            </div>
+                            <button id="gestureBtn" class="btn-primary">
+                                <i class="fas fa-hand-point-up"></i>
+                                <span>开始识别</span>
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- 媒体中心面板 -->
+            <section class="panel" id="mediaPanel">
+                <h2 class="panel-title">
+                    <i class="fas fa-music"></i>
+                    媒体娱乐中心
+                </h2>
+                
+                <div class="dashboard-row full">
+                    <div class="card music-player-card">
+                        <div class="music-player-wrapper">
+                            <div class="now-playing-visual">
+                                <div class="album-cover">
+                                    <i class="fas fa-music"></i>
+                                </div>
+                                <div class="song-info">
+                                    <div class="song-title">Beautiful Day</div>
+                                    <div class="song-artist">Cloud Orchestra</div>
+                                    <div class="song-album">Daylight Dreams</div>
+                                </div>
+                            </div>
+                            
+                            <div class="player-controls">
+                                <audio id="audioTrack" src="../assets/audio/song1.mp3"></audio>
+                                
+                                <div class="timeline">
+                                    <div class="time-current">0:00</div>
+                                    <div class="timeline-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 30%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="time-total">3:45</div>
+                                </div>
+                                
+                                <div class="main-controls">
+                                    <button class="control-btn" id="prevBtn">
+                                        <i class="fas fa-step-backward"></i>
+                                    </button>
+                                    <button class="control-btn control-btn-lg" id="playPauseBtn">
+                                        <i class="fas fa-play" id="ppIcon"></i>
+                                    </button>
+                                    <button class="control-btn" id="stopBtn">
+                                        <i class="fas fa-stop"></i>
+                                    </button>
+                                    <button class="control-btn" id="nextBtn">
+                                        <i class="fas fa-step-forward"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="extra-controls">
+                                    <button class="control-btn">
+                                        <i class="fas fa-volume-up"></i>
+                                    </button>
+                                    <button class="control-btn">
+                                        <i class="fas fa-random"></i>
+                                    </button>
+                                    <button class="control-btn">
+                                        <i class="fas fa-repeat"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-row">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-list"></i> 播放列表
+                        </h3>
+                        <div class="song-list">
+                            <div class="song-item active">
+                                <div class="song-number">1</div>
+                                <div class="song-details">
+                                    <div class="song-name">Beautiful Day</div>
+                                    <div class="song-artist">Cloud Orchestra</div>
+                                </div>
+                                <div class="song-duration">3:45</div>
+                            </div>
+                            <div class="song-item">
+                                <div class="song-number">2</div>
+                                <div class="song-details">
+                                    <div class="song-name">Midnight Drive</div>
+                                    <div class="song-artist">Night Cruisers</div>
+                                </div>
+                                <div class="song-duration">4:12</div>
+                            </div>
+                            <div class="song-item">
+                                <div class="song-number">3</div>
+                                <div class="song-details">
+                                    <div class="song-name">Highway Dreams</div>
+                                    <div class="song-artist">Road Travelers</div>
+                                </div>
+                                <div class="song-duration">3:58</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-podcast"></i> 推荐电台
+                        </h3>
+                        <div class="radio-list">
+                            <div class="radio-item">
+                                <div class="radio-icon">
+                                    <i class="fas fa-broadcast-tower"></i>
+                                </div>
+                                <div class="radio-details">
+                                    <div class="radio-name">城市音乐台</div>
+                                    <div class="radio-frequency">FM 98.8</div>
+                                </div>
+                                <button class="radio-play-btn">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                            <div class="radio-item">
+                                <div class="radio-icon">
+                                    <i class="fas fa-broadcast-tower"></i>
+                                </div>
+                                <div class="radio-details">
+                                    <div class="radio-name">经典流行台</div>
+                                    <div class="radio-frequency">FM 103.7</div>
+                                </div>
+                                <button class="radio-play-btn">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                            <div class="radio-item">
+                                <div class="radio-icon">
+                                    <i class="fas fa-broadcast-tower"></i>
+                                </div>
+                                <div class="radio-details">
+                                    <div class="radio-name">交通广播</div>
+                                    <div class="radio-frequency">FM 107.1</div>
+                                </div>
+                                <button class="radio-play-btn">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 系统设置面板 -->
+            <section class="panel" id="settingsPanel">
+                <h2 class="panel-title">
+                    <i class="fas fa-sliders-h"></i>
+                    系统设置
+                </h2>
+                
+                <div class="dashboard-row">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-palette"></i> 界面设置
+                        </h3>
+                        <div class="settings-group">
+                            <div class="setting-item">
+                                <div class="setting-label">界面主题</div>
+                                <div class="setting-control">
+                                    <select class="setting-select">
+                                        <option>暗色主题</option>
+                                        <option>亮色主题</option>
+                                        <option>自动切换</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">亮度调节</div>
+                                <div class="setting-control">
+                                    <input type="range" min="0" max="100" value="80" class="setting-slider">
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">界面动画</div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-volume-up"></i> 声音设置
+                        </h3>
+                        <div class="settings-group">
+                            <div class="setting-item">
+                                <div class="setting-label">媒体音量</div>
+                                <div class="setting-control">
+                                    <input type="range" min="0" max="100" value="70" class="setting-slider">
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">导航音量</div>
+                                <div class="setting-control">
+                                    <input type="range" min="0" max="100" value="85" class="setting-slider">
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">系统提示音</div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-row">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-car-alt"></i> 车辆设置
+                        </h3>
+                        <div class="settings-group">
+                            <div class="setting-item">
+                                <div class="setting-label">驾驶模式</div>
+                                <div class="setting-control">
+                                    <select class="setting-select">
+                                        <option>舒适模式</option>
+                                        <option>运动模式</option>
+                                        <option>经济模式</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">自动驾驶辅助</div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">自动泊车</div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> 系统信息
+                        </h3>
+                        <div class="system-info">
+                            <div class="info-item">
+                                <div class="info-label">软件版本</div>
+                                <div class="info-value">NeuroDrive v2.3.5</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">上次更新</div>
+                                <div class="info-value">2024-06-15</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">设备ID</div>
+                                <div class="info-value">ND-2023A-75896</div>
+                            </div>
+                            <button class="btn-primary">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>检查更新</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 系统状态指示器 -->
+    <div class="system-status-bar">
+        <div class="status-item">
+            <i class="fas fa-wifi"></i>
+            <span>网络已连接</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-broadcast-tower"></i>
+            <span>GPS信号良好</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>系统安全</span>
         </div>
     </div>
 
-    <!-- 状态指示器 -->
-    <div class="status-indicator">
-        <div class="status-dot"></div>
-        <span class="status-text">系统正常</span>
-    </div>
-
-    <!-- 引入JS模块 -->
+    <!-- 引入JS文件 -->
     <script type="module" src="../src/js/auth-check.js"></script>
     <script type="module" src="../src/js/home.js"></script>
     <script type="module" src="../src/js/multimedia.js"></script>

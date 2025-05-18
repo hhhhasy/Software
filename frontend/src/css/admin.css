@@ -225,3 +225,75 @@
 .log-message {
   flex: 1;
 }
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: #242730;
+  margin: 10% auto;
+  padding: 20px;
+  width: 60%;
+  max-width: 500px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  border: 1px solid #4a4e5c;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #fff;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #a8aab3;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  background: #2d303a;
+  border: 1px solid #4a4e5c;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.btn-submit {
+  background: linear-gradient(90deg, #00c6fb, #005bea);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.btn-submit:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}

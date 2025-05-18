@@ -1,15 +1,19 @@
 /**
  * 多媒体处理模块 - 语音、视频和手势处理
  */
+// 会话状态管理
+import session from '../utils/session.js';
 
 function handleVoiceCommand(commandText) {
   commandText = commandText.trim();
 
-  if (commandText.includes("播放音乐")) {
-    document.getElementById('playPauseBtn')?.click();
+  if (commandText.includes("为您播放默认播放列表")) {
+    document.getElementById('audioTrack').play();
     alert("🎵 已播放音乐");
-  } else {
-    alert("未识别的指令：" + commandText);
+  } 
+  else if (commandText.includes("音乐播放已暂停")) {
+    document.getElementById('audioTrack').pause();
+    alert("🎵 已暂停音乐");
   }
 }
 
@@ -41,8 +45,13 @@ async function toggleRecording() {
         formData.append('audio', audioBlob, 'recording.wav');
 
         try {
+          const currentUser = session.get('currentUser')
           const response = await fetch('http://localhost:8000/api/speech-to-text', {
             method: 'POST',
+            headers: {
+              'X-User-ID': currentUser?.id   // 从登录状态中获得
+            },
+
             body: formData
           });
 
@@ -50,7 +59,7 @@ async function toggleRecording() {
 
           const { command, text } = await response.json();
           alert(text);
-          handleVoiceCommand(command);
+          handleVoiceCommand(text);
         } catch (err) {
           console.error('语音识别错误:', err);
           alert('语音识别失败: ' + (err.detail || '服务器错误'));

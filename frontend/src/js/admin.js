@@ -1,5 +1,9 @@
 import session from '../utils/session.js';
 
+// 编辑用户模态框
+const editModal = document.getElementById('editUserModal');
+const editUserForm = document.getElementById('editUserForm');
+
 /**
  * 加载用户列表
  */
@@ -63,9 +67,32 @@ async function loadUsers() {
 function bindActionButtons() {
   // 编辑按钮
   document.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       const id = e.currentTarget.closest('.action-buttons').dataset.id;
-      alert(`编辑用户ID: ${id}（功能待实现）`);
+      try {
+        // 获取用户详情
+        const res = await fetch(`http://localhost:8000/api/users/${id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!res.ok) throw new Error('获取用户信息失败');
+        const user = await res.json();
+
+        // 填充表单
+        document.getElementById('editUserId').value = user.id;
+        document.getElementById('editUsername').value = user.username;
+        document.getElementById('editPassword').value = user.password;
+        document.getElementById('editRole').value = user.role;
+
+        // 显示模态框
+        editModal.style.display = 'block';
+      } catch (err) {
+        console.error(err);
+        alert('加载用户信息失败：' + err.message);
+      }
     });
   });
   
@@ -74,7 +101,11 @@ function bindActionButtons() {
     btn.addEventListener('click', async e => {
       const id = e.currentTarget.closest('.action-buttons').dataset.id;
       if (!confirm('确定要删除此用户？')) return;
-      
+      const currentUser = session.get('currentUser');
+      if (currentUser && currentUser.id == id) {
+          alert('不能删除自己！');
+          return;
+      }
       try {
         const delRes = await fetch(`http://localhost:8000/api/users/${id}`, {
           method: 'DELETE'
@@ -91,6 +122,53 @@ function bindActionButtons() {
   });
 }
 
+
+// 提交编辑表单
+editUserForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  
+  const userId = document.getElementById('editUserId').value;
+  const username = document.getElementById('editUsername').value;
+  const password = document.getElementById('editPassword').value;
+  const role = document.getElementById('editRole').value;
+
+  try {
+    const res = await fetch(`http://localhost:8000/api/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username,
+        password,
+        role
+      })
+    });
+
+    if (!res.ok) throw new Error('更新失败: ' + res.status);
+    
+    // 关闭模态框并刷新列表
+    editModal.style.display = 'none';
+    loadUsers();
+    alert('用户信息更新成功！');
+  } catch (err) {
+    console.error(err);
+    alert('更新用户信息失败：' + err.message);
+  }
+});
+
+// 关闭模态框
+document.querySelector('.close').addEventListener('click', () => {
+  editModal.style.display = 'none';
+});
+
+// 点击模态框外部关闭
+window.addEventListener('click', (e) => {
+  if (e.target === editModal) {
+    editModal.style.display = 'none';
+  }
+});
+
 /**
  * 初始化管理员退出登录按钮
  */
@@ -98,8 +176,11 @@ function initAdminLogout() {
   const logoutBtn = document.getElementById('adminLogout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      session.clear();
-      window.location.href = 'login.html';
+      // 先移除特定的会话数据，而不是清除所有localStorage
+      session.remove('currentUser');
+      session.remove('lastActivity');
+      // 使用replace而不是href，确保完全重新加载页面
+      window.location.replace('login.html');
     });
   }
 }

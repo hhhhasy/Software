@@ -58,7 +58,8 @@ async function toggleRecording() {
           if (!response.ok) throw await response.json();
 
           const { command, text } = await response.json();
-          alert(text);
+          document.querySelector('#textInput').textContent = text;
+          // alert(text);
           handleVoiceCommand(text);
         } catch (err) {
           console.error('语音识别错误:', err);

@@ -21,7 +21,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from fastapi.middleware.cors import CORSMiddleware  # ✅ 必须有这行
 from zhipu import call_zhipu_chat  # 确保模块路径正确
 from sqlalchemy.orm.exc import NoResultFound
-
+from openvino.runtime import Core
 
 
 
@@ -418,7 +418,45 @@ async def speech_to_text( request: Request,audio: UploadFile = File(...),db: Ses
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail=f"语音识别错误: {str(e)}"
         )
+'''
+模型配置如果有问题，请删除intel文件夹，然后参考模型下载.md内容下载模型
+'''
+# 模型路径
+VINO_MODEL_DIR = "./intel"
 
+# 加载 OpenVINO 模型
+core = Core()
+face_det_model = core.read_model(f"{VINO_MODEL_DIR}/face-detection-adas-0001/FP16/face-detection-adas-0001.xml")
+face_det = core.compile_model(face_det_model, "CPU")
+face_output_layer = face_det.output(0)
+
+landmarks_model = core.read_model(f"{VINO_MODEL_DIR}/facial-landmarks-35-adas-0002/FP16/facial-landmarks-35-adas-0002.xml")
+landmarks_det = core.compile_model(landmarks_model, "CPU")
+landmarks_output_layer = landmarks_det.output(0)
+
+head_pose_model = core.read_model(f"{VINO_MODEL_DIR}/head-pose-estimation-adas-0001/FP16/head-pose-estimation-adas-0001.xml")
+head_pose_det = core.compile_model(head_pose_model, "CPU")
+
+gaze_model = core.read_model(f"{VINO_MODEL_DIR}/gaze-estimation-adas-0002/FP16/gaze-estimation-adas-0002.xml")
+gaze_det = core.compile_model(gaze_model, "CPU")
+
+def preprocess_for_openvino(image, target_shape):
+    h, w = target_shape
+    resized = cv2.resize(image, (w, h))
+    return resized.transpose((2, 0, 1))[np.newaxis, :].astype(np.float32)
+
+# 安全裁剪函数，确保眼睛区域裁剪在图像边界内
+def safe_crop(image, center_x, center_y, size):
+    h, w = image.shape[:2]
+    half = size // 2
+    x1 = max(int(center_x) - half, 0)
+    y1 = max(int(center_y) - half, 0)
+    x2 = min(int(center_x) + half, w)
+    y2 = min(int(center_y) + half, h)
+    cropped = image[y1:y2, x1:x2]
+    if cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
+        return None
+    return cropped
 @app.post('/api/process-video', response_model=VideoResponse)
 async def process_video():
     """
@@ -482,6 +520,63 @@ async def process_video():
 
             frame = cv2.flip(frame, 1)
             h, w = frame.shape[:2]
+
+            # OpenVINO 人脸检测
+            face_input = preprocess_for_openvino(frame, (384, 672))  # 模型默认输入大小
+            result = face_det(face_input)[face_output_layer]
+            for det in result[0][0]:
+                if det[2] > 0.6:
+                    xmin = int(det[3] * w)
+                    ymin = int(det[4] * h)
+                    xmax = int(det[5] * w)
+                    ymax = int(det[6] * h)
+                    face_roi = frame[ymin:ymax, xmin:xmax]
+
+                    # 面部关键点
+                    lm_input = preprocess_for_openvino(face_roi, (60, 60))
+                    lm_result = landmarks_det(lm_input)[landmarks_output_layer][0]
+                    left_eye = lm_result[0:2] * [face_roi.shape[1], face_roi.shape[0]]
+                    right_eye = lm_result[2:4] * [face_roi.shape[1], face_roi.shape[0]]
+
+                    # 安全裁剪眼睛区域
+                    left_eye_img = safe_crop(face_roi, left_eye[0], left_eye[1], 30)
+                    right_eye_img = safe_crop(face_roi, right_eye[0], right_eye[1], 30)
+
+                    # 如果任意一个为空则跳过本轮
+                    if left_eye_img is None or right_eye_img is None:
+                        logger.warning("无法提取眼睛图像，跳过该帧")
+                        continue
+
+                    # 头部姿态
+                    head_pose_input = preprocess_for_openvino(face_roi, (60, 60))
+                    yaw = head_pose_det(head_pose_input)[head_pose_det.output("angle_y_fc")][0][0]
+                    pitch = head_pose_det(head_pose_input)[head_pose_det.output("angle_p_fc")][0][0]
+                    roll = head_pose_det(head_pose_input)[head_pose_det.output("angle_r_fc")][0][0]
+
+                    # 视线估计
+                    gaze_input = {
+                        "left_eye_image": preprocess_for_openvino(left_eye_img, (60, 60)),
+                        "right_eye_image": preprocess_for_openvino(right_eye_img, (60, 60)),
+                        "head_pose_angles": np.array([[yaw, pitch, roll]], dtype=np.float32)
+                    }
+                    gaze_vector = gaze_det(gaze_input)[gaze_det.output(0)][0]
+
+                    # 判断是否注视前方（阈值可调）
+                    if abs(gaze_vector[0]) > 0.3 or abs(gaze_vector[1]) > 0.3:
+                        warning = "注意力偏离前方，请集中注意力！"
+                        if warning not in warnings:
+                            warnings.append(warning)
+                            try:
+                                tts_engine.say(warning)
+                                tts_engine.runAndWait()
+                            except Exception as e:
+                                logger.warning(f"语音输出失败: {str(e)}")
+
+                    # 画框显示
+                    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+                    cv2.putText(frame, f"Gaze: ({gaze_vector[0]:.2f}, {gaze_vector[1]:.2f})", (xmin, ymin - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = face_mesh.process(rgb)
 

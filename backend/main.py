@@ -44,7 +44,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:Dskl930%40@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:zhyf040216@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -333,7 +333,7 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
         )
 
 @app.post("/api/speech-to-text", response_model=SpeechResponse)
-async def speech_to_text( request: Request,audio: UploadFile = File(...),db: Session = Depends(get_db)) -> Dict[str, str]:
+async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Session = Depends(get_db)) -> Dict[str, str]:
     """
     语音转文本API，识别语音指令并执行相应操作
     """
@@ -373,14 +373,13 @@ async def speech_to_text( request: Request,audio: UploadFile = File(...),db: Ses
             
             # 如果未匹配任何预设指令，则调用大模型进行回答
             logger.info("未匹配到预设指令，交给大模型处理")
-            ai_reply = await call_zhipu_chat([
-                {"role": "user", "content": recognized_text}
-            ])
             user_id_str = request.headers.get("X-User-ID")
             if not user_id_str or not user_id_str.isdigit():
                 raise HTTPException(status_code=400, detail="缺少或非法的用户 ID")
             user_id = int(user_id_str)
+            logger.info(f"用户 {user_id} 发起大模型请求")
             
+            # 使用 zhipu_chat 的逻辑来读取和更新对话历史
             try:
                 memory = db.query(UserMemory).filter(UserMemory.user_id == user_id).one()
                 history = json.loads(memory.content)
@@ -390,11 +389,22 @@ async def speech_to_text( request: Request,audio: UploadFile = File(...),db: Ses
 
             # 将当前请求的对话追加到历史中
             history.append({"role": "user", "content": recognized_text})
+
+            MAX_HISTORY = 9
+            if len(history) > MAX_HISTORY:
+                history = history[-MAX_HISTORY:]
+
+            # 调用大模型
+            ai_reply = await call_zhipu_chat(history)
+
+            # 添加 assistant 回复
             history.append({"role": "assistant", "content": ai_reply})
+
+            # 写回数据库
             memory.content = json.dumps(history, ensure_ascii=False)
             db.merge(memory)
             db.commit()
-            
+            logger.info(f"用户 {user_id} 对话历史已更新: {history}")
             
             # 可选：语音播报大模型回答
             tts_engine.say(ai_reply)
@@ -1024,45 +1034,6 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"无法读取日志: {str(e)}"
         )
-
-@app.post("/api/zhipu-chat",response_model=AIResponse)
-async def zhipu_chat( req: ChatRequest,request: Request, db: Session = Depends(get_db)):
-    try:
-        user_id_str = request.headers.get("X-User-ID")
-        if not user_id_str:
-            raise HTTPException(status_code=400, detail="缺少用户 ID")
-        user_id = int(user_id_str)
-        # 尝试读取该用户历史记录
-        try:
-            memory = db.query(UserMemory).filter(UserMemory.user_id == user_id).one()
-            history = json.loads(memory.content)
-        except NoResultFound:
-            history = []
-            memory = UserMemory(user_id=user_id, content="[]")
-
-        # 将当前请求的对话追加到历史中
-        history.extend(req.messages)
-
-        # # 控制长度（例如最多保留20条）
-        # MAX_HISTORY = 20
-        # if len(history) > MAX_HISTORY:
-        #     history = history[-MAX_HISTORY:]
-
-        # 调用大模型
-        reply = await call_zhipu_chat(history)
-
-        # 添加 assistant 回复
-        history.append({"role": "assistant", "content": reply})
-
-        # 写回数据库
-        memory.content = json.dumps(history, ensure_ascii=False)
-        db.merge(memory)
-        db.commit()
-
-        return {"reply": reply}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"调用大模型失败: {str(e)}")
 
 # ============= 应用启动 =============
 if __name__ == "__main__":

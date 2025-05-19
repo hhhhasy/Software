@@ -44,7 +44,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:zhyf040216@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:Dskl930%40@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -159,6 +159,16 @@ def get_whisper_model():
 
 # 初始化语音引擎
 tts_engine = pyttsx3.init()
+
+# 预加载模型
+@app.on_event("startup")
+def preload_whisper_model():
+    try:
+        logger.info("FastAPI 启动，预加载 Whisper 模型中...")
+        get_whisper_model()
+    except Exception as e:
+        logger.error(f"预加载失败: {str(e)}")
+        raise RuntimeError(f"Whisper 模型预加载失败: {e}")
 
 # 依赖项：获取 DB 会话
 def get_db():

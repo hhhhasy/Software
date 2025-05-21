@@ -96,7 +96,12 @@ async function toggleRecording() {
 // 处理视频识别
 async function processVideo() {
   try {
-    const response = await fetch('http://localhost:8000/api/process-video', { method: 'POST' });
+    const response = await fetch('http://localhost:8000/api/process-video', { 
+      method: 'POST',
+      headers: {
+              'X-User-ID': currentUser?.id   // 从登录状态中获得
+            }, 
+    });
     if (!response.ok) {
       throw await response.json();
     }

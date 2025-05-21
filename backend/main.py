@@ -35,6 +35,24 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("api")
+mmlog  = logging.getLogger("multimodal")        # 多模态行为的日志
+
+# ---------- 多模态日志工具 ----------
+def log_multimodal(user_id: int,
+                   modality: str,
+                   content: str,
+                   response: str):
+    """
+    结构化写多模态交互日志
+    - user_id : 用户 ID（0 表示匿名）
+    - modality: speech / gesture / vision
+    - content : 用户输入 (“播放音乐”, “fist”…)
+    - response: 系统反馈 (“为您播放默认播放列表”…)
+    """
+    mmlog.info(
+        f"user:{user_id} | modality:{modality} | content:{content} | response:{response}"
+    )
+
 
 # ============= 配置 =============
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model')
@@ -44,7 +62,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:zhyf040216@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:abc000000@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -366,6 +384,11 @@ async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Se
                 except Exception as e:
                     logger.warning(f"语音输出失败: {str(e)}")
                 
+                user_id_str = request.headers.get("X-User-ID")
+                if not user_id_str or not user_id_str.isdigit():
+                    raise HTTPException(status_code=400, detail="缺少或非法的用户 ID")
+                user_id = int(user_id_str)
+                log_multimodal(user_id, "speech", recognized_text, response)
                 return {
                     "command": recognized_text,
                     "text": response
@@ -410,6 +433,7 @@ async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Se
             tts_engine.say(ai_reply)
             tts_engine.runAndWait()
 
+            log_multimodal(user_id, "speech", recognized_text, ai_reply)
             return {
                     "command": recognized_text,
                     "text": ai_reply
@@ -725,13 +749,17 @@ async def process_video():
         cv2.destroyAllWindows()
 
 @app.post('/api/process-gesture', response_model=GestureResponse)
-async def process_gesture():
+async def process_gesture(request: Request):
     """
     手势识别API，识别并响应用户的手势控制
     """
     mp_hands = None
     hands = None
     cap = None
+
+    # 读取用户 ID
+    user_id_str = request.headers.get("X-User-ID") 
+    user_id = int(user_id_str) if user_id_str and user_id_str.isdigit() else 0
     
     try:
         GESTURES = ['fist', 'palm', 'thumbs_up', 'OK']
@@ -810,6 +838,15 @@ async def process_gesture():
                     (0, 255, 0),
                     3
                 )
+                # 根据手势决定反馈文本
+                gesture_resp_map = {
+                    'fist': "检测到拳，音乐已暂停",
+                    'thumbs_up': "收到确认",
+                    'palm': "检测到手展开",
+                    'OK': "检测到OK"
+                }
+                resp_text = gesture_resp_map.get(recognized_label, "")
+                log_multimodal(user_id, "gesture", recognized_label, resp_text)
                 # 显示1秒后退出
                 if time.time() - display_start > 1.0:
                     break

@@ -96,11 +96,12 @@ async function toggleRecording() {
 // 处理视频识别
 async function processVideo() {
   try {
+    const currentUser = session.get('currentUser')
     const response = await fetch('http://localhost:8000/api/process-video', { 
       method: 'POST',
       headers: {
               'X-User-ID': currentUser?.id   // 从登录状态中获得
-            }, 
+            }
     });
     if (!response.ok) {
       throw await response.json();
@@ -119,7 +120,13 @@ async function processVideo() {
 // 处理手势识别
 async function processGesture() {
   try {
-    const response = await fetch('http://localhost:8000/api/process-gesture', { method: 'POST' });
+    const currentUser = session.get('currentUser')
+    const response = await fetch('http://localhost:8000/api/process-gesture', { 
+      method: 'POST',
+      headers: {
+              'X-User-ID': currentUser?.id   // 从登录状态中获得
+            }
+    });
     if (!response.ok) {
       throw await response.json();
     }

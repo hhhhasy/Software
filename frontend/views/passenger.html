@@ -88,35 +88,13 @@
             <button class="voice-btn" id="voiceBtn">
                 <i class="fas fa-microphone"></i> 语音指令
             </button>
+            <div id="textInput" class="voice-result">请点击上方按钮开始语音交互</div>
         </div>
     </div>
 
     <!-- 引入JS模块 -->
-    <script>
-        document.getElementById("logout").addEventListener("click", function() {
-            window.location.href = "login.html"; // 替换成你的退出地址
-        });
-        // 播放/暂停功能示例
-        document.getElementById("playPauseBtn").addEventListener("click", function() {
-        const audioTrack = document.getElementById("audioTrack");
-        const ppIcon = document.getElementById("ppIcon");
-        const musicIcon = document.getElementById("musicIcon");
-        
-        if (audioTrack.paused) {
-            audioTrack.play();
-            ppIcon.classList.remove("fa-play");
-            ppIcon.classList.add("fa-pause");
-            musicIcon.classList.add("playing");
-        } else {
-            audioTrack.pause();
-            ppIcon.classList.remove("fa-pause");
-            ppIcon.classList.add("fa-play");
-            musicIcon.classList.remove("playing");
-        }
-        });
-    </script>
-    <script src="../src/passenger.js"></script>
+    <script type="module" src="../src/js/auth-check.js"></script>
+    <script type="module" src="../src/js/passenger.js"></script>
     <script type="module" src="../src/js/multimedia.js"></script>
-    
 </body>
 </html>

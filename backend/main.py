@@ -62,7 +62,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # 数据库配置（MySQL）
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:abc000000@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -456,7 +456,7 @@ async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Se
 模型配置如果有问题，请删除intel文件夹，然后参考模型下载.md内容下载模型
 '''
 # 模型路径
-VINO_MODEL_DIR = "./intel"
+VINO_MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "intel")
 
 # 加载 OpenVINO 模型
 core = Core()

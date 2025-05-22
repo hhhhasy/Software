@@ -1,15 +1,16 @@
 import session from '../utils/session.js';
+import { showLoading, hideLoading, showError, showSuccess } from '../utils/uiUtils.js';
 
 /**
  * 处理登录表单提交
  */
 async function handleLogin(e) {
   e.preventDefault();
+  showLoading('登录中...');
   
   const loginBtn = document.querySelector('#loginForm button[type="submit"]');
   if (loginBtn) {
     loginBtn.disabled = true;
-    loginBtn.innerHTML = '<span class="spinner"></span> 登录中...';
   }
   
   const username = document.getElementById('username').value;
@@ -30,7 +31,7 @@ async function handleLogin(e) {
     const {id, role} = await response.json();
     
     // 使用新的会话存储方式，添加时间戳
-    session.set('currentUser', { id,username, role })
+    session.set('currentUser', { id,username, role });
     session.set('lastActivity', Date.now());
     
     // 基于角色重定向
@@ -51,10 +52,10 @@ async function handleLogin(e) {
     // 重置按钮状态
     if (loginBtn) {
       loginBtn.disabled = false;
-      loginBtn.textContent = '登录';
     }
-    
-    showAuthError(err.detail || '登录失败，请检查用户名和密码');
+    showError(err.detail || '登录失败，请检查用户名和密码');
+  } finally {
+    hideLoading();
   }
 }
 
@@ -63,11 +64,11 @@ async function handleLogin(e) {
  */
 async function handleRegister(e) {
   e.preventDefault();
+  showLoading('注册中...');
   
   const registerBtn = document.querySelector('#registerForm button[type="submit"]');
   if (registerBtn) {
     registerBtn.disabled = true;
-    registerBtn.innerHTML = '<span class="spinner"></span> 注册中...';
   }
   
   const newUser = {
@@ -97,68 +98,17 @@ async function handleRegister(e) {
       throw errorData;
     }
     
-    showAuthSuccess('注册成功，即将跳转到登录页');
+    showSuccess('注册成功，即将跳转到登录页');
     window.location.href = 'login.html';
   } catch (err) {
     // 重置按钮状态
     if (registerBtn) {
       registerBtn.disabled = false;
-      registerBtn.textContent = '立即注册';
     }
-    
-    showAuthError(err.detail || '注册失败');
+    showError(err.detail || '注册失败');
+  } finally {
+    hideLoading();
   }
-}
-
-/**
- * 显示认证错误消息
- */
-function showAuthError(message) {
-  // 检查是否已存在错误消息元素
-  let errorEl = document.querySelector('.auth-error');
-  
-  if (!errorEl) {
-    // 创建错误消息元素
-    errorEl = document.createElement('div');
-    errorEl.className = 'auth-error';
-    
-    // 插入到表单前
-    const form = document.querySelector('form');
-    if (form) {
-      form.parentNode.insertBefore(errorEl, form);
-    }
-  }
-  
-  errorEl.textContent = message;
-  errorEl.style.opacity = '1';
-  
-  // 5秒后淡出
-  setTimeout(() => {
-    errorEl.style.opacity = '0';
-  }, 5000);
-}
-
-/**
- * 显示认证成功消息
- */
-function showAuthSuccess(message) {
-  // 检查是否已存在成功消息元素
-  let successEl = document.querySelector('.auth-success');
-  
-  if (!successEl) {
-    // 创建成功消息元素
-    successEl = document.createElement('div');
-    successEl.className = 'auth-success';
-    
-    // 插入到表单前
-    const form = document.querySelector('form');
-    if (form) {
-      form.parentNode.insertBefore(successEl, form);
-    }
-  }
-  
-  successEl.textContent = message;
-  successEl.style.opacity = '1';
 }
 
 /**
@@ -174,7 +124,7 @@ function initAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     const errorMsg = urlParams.get('error');
     if (errorMsg) {
-      showAuthError(decodeURIComponent(errorMsg));
+      showError(decodeURIComponent(errorMsg));
       // 清除URL参数
       window.history.replaceState({}, document.title, window.location.pathname);
     }

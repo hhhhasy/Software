@@ -1,4 +1,5 @@
 import session from '../utils/session.js';
+import { showLoading as showGlobalLoading, hideLoading as hideGlobalLoading, showError as showGlobalError, showSuccess as showGlobalSuccess } from '../utils/uiUtils.js';
 
 /**
  * 维护人员界面逻辑
@@ -41,47 +42,6 @@ const cleanCacheBtn = document.getElementById('cleanCacheBtn');
 const dbMaintenanceBtn = document.getElementById('dbMaintenanceBtn');
 const restartServicesBtn = document.getElementById('restartServicesBtn');
 const securityScanBtn = document.getElementById('securityScanBtn');
-
-/**
- * 显示全局加载遮罩
- */
-function showLoading(msg = '加载中...') {
-    let loading = document.getElementById('globalLoading');
-    if (!loading) {
-        loading = document.createElement('div');
-        loading.id = 'globalLoading';
-        loading.className = 'global-loading-mask';
-        loading.innerHTML = `<div class="loading-spinner"></div><div class="loading-msg">${msg}</div>`;
-        document.body.appendChild(loading);
-    } else {
-        loading.querySelector('.loading-msg').textContent = msg;
-        loading.style.display = 'flex';
-    }
-}
-
-/**
- * 隐藏全局加载遮罩
- */
-function hideLoading() {
-    const loading = document.getElementById('globalLoading');
-    if (loading) loading.style.display = 'none';
-}
-
-/**
- * 显示全局错误提示
- */
-function showError(msg) {
-    let err = document.getElementById('globalError');
-    if (!err) {
-        err = document.createElement('div');
-        err.id = 'globalError';
-        err.className = 'global-error-msg';
-        document.body.appendChild(err);
-    }
-    err.textContent = msg;
-    err.style.display = 'block';
-    setTimeout(() => { err.style.display = 'none'; }, 4000);
-}
 
 /**
  * 初始化页面
@@ -153,8 +113,7 @@ function bindEvents() {
  */
 async function loadLogs() {
     try {
-        showLoading('日志加载中...');
-        logContainer.innerHTML = '<div class="loading">加载中...</div>';
+        showGlobalLoading('日志加载中...');
         
         // 构建请求参数
         const requestData = {
@@ -194,7 +153,6 @@ async function loadLogs() {
         
         if (!data.logs || data.logs.length === 0) {
             logContainer.innerHTML = '<div class="empty-logs">没有找到日志记录</div>';
-            hideLoading();
             return;
         }
         
@@ -218,11 +176,11 @@ async function loadLogs() {
             
             logContainer.appendChild(logEntry);
         });
-        hideLoading();
     } catch (error) {
-        hideLoading();
-        showError('加载日志失败: ' + error.message);
+        showGlobalError('加载日志失败: ' + error.message);
         logContainer.innerHTML = `<div class="error-message">加载日志失败: ${error.message}</div>`;
+    } finally {
+        hideGlobalLoading();
     }
 }
 
@@ -325,37 +283,55 @@ function hideModal() {
 /**
  * 执行维护操作
  */
-function executeAction() {
+async function executeAction() {
     let statusMessage = '';
-    
-    switch (currentAction) {
-        case 'cleanCache':
-            statusMessage = '缓存清理完成！共清理了56个临时文件和734MB空间。';
-            break;
-        case 'dbMaintenance':
-            statusMessage = '数据库维护完成！数据库结构已优化，查询性能提升约15%。';
-            break;
-        case 'restartServices':
-            statusMessage = '系统服务已成功重启！所有服务现在正常运行。';
-            break;
-        case 'securityScan':
-            statusMessage = '安全扫描完成！未发现严重安全隐患。2个低风险警告已记录。';
-            break;
-        default:
-            break;
-    }
-    
-    if (statusMessage) {
-        hideModal();
-        
-        // 显示操作完成状态
-        setTimeout(() => {
-            showConfirmation('操作成功', statusMessage);
-            confirmAction.style.display = 'none';
-            cancelAction.textContent = '关闭';
-        }, 1000);
-    } else {
-        hideModal();
+    let actionDescriptionForLoading = '执行操作中...';
+    let success = false;
+
+    hideModal(); // Hide modal immediately
+    showGlobalLoading(actionDescriptionForLoading);
+
+    try {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        switch (currentAction) {
+            case 'cleanCache':
+                actionDescriptionForLoading = '正在清理缓存...';
+                statusMessage = '缓存清理完成！共清理了56个临时文件和734MB空间。';
+                success = true;
+                break;
+            case 'dbMaintenance':
+                actionDescriptionForLoading = '正在执行数据库维护...';
+                statusMessage = '数据库维护完成！数据库结构已优化，查询性能提升约15%。';
+                success = true;
+                break;
+            case 'restartServices':
+                actionDescriptionForLoading = '正在重启服务...';
+                statusMessage = '系统服务已成功重启！所有服务现在正常运行。';
+                success = true;
+                break;
+            case 'securityScan':
+                actionDescriptionForLoading = '正在执行安全扫描...';
+                statusMessage = '安全扫描完成！未发现严重安全隐患。2个低风险警告已记录。';
+                success = true;
+                break;
+            default:
+                showGlobalError('未知的维护操作。');
+                break;
+        }
+
+        if (success) {
+            showGlobalSuccess(statusMessage);
+        } else if (currentAction) {
+            showGlobalError(`操作 ${currentAction} 失败。`);
+        }
+    } catch (err) {
+        showGlobalError(`执行操作 ${currentAction} 失败: ${err.message}`);
+        console.error(`Error during ${currentAction}:`, err);
+    } finally {
+        hideGlobalLoading();
+        currentAction = null; // Reset current action
     }
 }
 

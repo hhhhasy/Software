@@ -1,4 +1,5 @@
 import session from '../utils/session.js';
+import { showLoading, hideLoading, showError, showSuccess } from '../utils/uiUtils.js';
 
 /**
  * 初始化音乐播放器
@@ -172,36 +173,108 @@ function initVoiceControl() {
   if (!voiceBtn) return;
   
   let isRecording = false;
+  let mediaRecorder;
+  let audioChunks = [];
+  let currentStream = null;
   
-  voiceBtn.addEventListener('click', () => {
+  voiceBtn.addEventListener('click', async () => {
     isRecording = !isRecording;
     
     if (isRecording) {
-      voiceBtn.classList.add('recording');
-      voiceBtn.innerHTML = '<i class="fas fa-microphone-slash"></i><span>点击停止</span>';
-      voiceOutput.textContent = '正在聆听...';
-      
-      // 为波形添加动画
-      voiceWaves.forEach((wave, index) => {
-        wave.style.height = '20px';
-        wave.style.width = '4px';
-        wave.style.opacity = '1';
-        wave.style.animation = `voiceWave 1s ease-in-out ${index * 0.1}s infinite alternate`;
-      });
-      
-      // 这里添加实际的语音识别逻辑
-      
+      showLoading('正在开启语音识别...');
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(currentStream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          hideLoading();
+          showLoading('正在识别语音...');
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.wav');
+
+          try {
+            const currentUser = session.get('currentUser');
+            const response = await fetch('http://localhost:8000/api/speech-to-text', {
+              method: 'POST',
+              headers: {
+                'X-User-ID': currentUser?.id
+              },
+              body: formData
+            });
+
+            if (!response.ok) throw await response.json();
+
+            const { command, text } = await response.json();
+            voiceOutput.textContent = text;
+            showSuccess('语音识别成功: ' + text);
+            // 在这里可以根据 command 或 text 执行相应操作
+            // 例如: handleDriverVoiceCommand(command, text);
+          } catch (err) {
+            showError('语音识别失败: ' + (err.detail || '服务器错误'));
+            console.error('语音识别错误:', err);
+          } finally {
+            hideLoading();
+          }
+        };
+
+        mediaRecorder.start();
+        hideLoading();
+        voiceBtn.classList.add('recording');
+        voiceBtn.innerHTML = '<i class="fas fa-microphone-slash"></i><span>点击停止</span>';
+        voiceOutput.textContent = '正在聆听...';
+        voiceWaves.forEach((wave, index) => {
+          wave.style.height = '20px';
+          wave.style.width = '4px';
+          wave.style.opacity = '1';
+          wave.style.animation = `voiceWave 1s ease-in-out ${index * 0.1}s infinite alternate`;
+        });
+
+        // 语音识别超时或自动停止逻辑 (可选)
+        // setTimeout(() => {
+        //   if (isRecording && mediaRecorder && mediaRecorder.state === "recording") {
+        //     mediaRecorder.stop();
+        //     if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+        //     isRecording = false;
+        //     voiceBtn.classList.remove('recording');
+        //     voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>按下说话</span>';
+        //     voiceOutput.textContent = '语音识别已停止';
+        //     voiceWaves.forEach(wave => {
+        //       wave.style.height = '3px';
+        //       wave.style.width = '3px';
+        //       wave.style.animation = 'none';
+        //     });
+        //     showInfo('语音识别超时，已自动停止');
+        //   }
+        // }, 15000); // 例如15秒超时
+
+      } catch (err) {
+        hideLoading();
+        showError('无法访问麦克风: ' + err.message);
+        console.error('录音错误:', err);
+        isRecording = false; // 重置状态
+      }
     } else {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
       voiceBtn.classList.remove('recording');
       voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>按下说话</span>';
       voiceOutput.textContent = '语音识别已停止';
-      
-      // 停止波形动画
       voiceWaves.forEach(wave => {
         wave.style.height = '3px';
         wave.style.width = '3px';
         wave.style.animation = 'none';
       });
+      hideLoading(); // 确保在停止时也隐藏加载指示
     }
   });
   

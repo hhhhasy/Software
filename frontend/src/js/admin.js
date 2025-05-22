@@ -117,7 +117,10 @@ function bindActionButtons() {
       showLoading();
       try {
         const delRes = await fetch(`http://localhost:8000/api/users/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: {
+            'X-User-ID': currentUser ? currentUser.id.toString() : '0'  // 添加当前用户ID到请求头
+          }
         });
         
         if (!delRes.ok) throw new Error('删除失败: ' + delRes.status);

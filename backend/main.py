@@ -954,7 +954,7 @@ async def update_user(user_id: int,user_data: UserUpdate,db: Session = Depends(g
         )
 
 @app.delete("/api/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
     """删除用户"""
     try:
         user = db.query(User).filter(User.id == user_id).first()
@@ -965,7 +965,10 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
             )
 
         # 检查是否删除自己
-        if user.id == current_user.id:
+        user_id_str = request.headers.get("X-User-ID")
+        current_user_id = int(user_id_str) if user_id_str and user_id_str.isdigit() else 0
+        
+        if user.id == current_user_id:
             logger.warning(f"用户ID: {user_id} 尝试删除自己")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

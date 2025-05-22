@@ -562,7 +562,7 @@ async def process_video():
                     gaze_vector = gaze_det(gaze_input)[gaze_det.output(0)][0]
 
                     # 判断是否注视前方（阈值可调）
-                    if abs(gaze_vector[0]) > 0.3 or abs(gaze_vector[1]) > 0.3:
+                    if abs(gaze_vector[0]) > 0.4 or abs(gaze_vector[1]) > 0.4:
                         warning = "注意力偏离前方，请集中注意力！"
                         if warning not in warnings:
                             warnings.append(warning)

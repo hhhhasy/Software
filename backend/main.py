@@ -23,14 +23,19 @@ from zhipu import call_zhipu_chat  # 确保模块路径正确
 from sqlalchemy.orm.exc import NoResultFound
 from openvino.runtime import Core
 
-
+# ============= 配置 =============
+# 确保所有路径使用绝对路径，避免当前工作目录影响
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_PATH = os.path.join(BASE_DIR, "api.log")
+MODEL_DIR = os.path.join(BASE_DIR, 'model')
+os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # ============= 日志配置 =============
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("api.log"),
+        logging.FileHandler(LOG_PATH),
         logging.StreamHandler()
     ]
 )
@@ -54,13 +59,7 @@ def log_multimodal(user_id: int,
     )
 
 
-# ============= 配置 =============
-MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model')
-os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
-
-
-
-# 数据库配置（MySQL）
+# ============= 数据库配置（MySQL） =============
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
 DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
@@ -998,9 +997,8 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
     - 按时间倒序排列的日志条目
     """
     try:
-        log_path = os.path.join(os.path.dirname(__file__), "api.log")
-        if not os.path.exists(log_path):
-            logger.warning(f"日志文件不存在: {log_path}")
+        if not os.path.exists(LOG_PATH):
+            logger.warning(f"日志文件不存在: {LOG_PATH}")
             return {"logs": [], "total_entries": 0}
 
         logs = []
@@ -1019,7 +1017,7 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
 
         for encoding in encodings_to_try:
             try:
-                with open(log_path, "r", encoding=encoding) as f:
+                with open(LOG_PATH, "r", encoding=encoding) as f:
                     log_lines = f.readlines()
                 logger.info(f"使用 {encoding} 编码成功读取日志文件")
                 break  # 如果成功读取，跳出循环

@@ -6,8 +6,7 @@ import { showLoading, hideLoading, showError, showSuccess } from '../utils/uiUti
  */
 function initMusicPlayer() {
   const audio    = document.getElementById('audioTrack');
-  const playBtn  = document.getElementById('playPauseBtn');
-  const stopBtn  = document.getElementById('stopBtn');
+  const playPauseBtn  = document.getElementById('playPauseBtn');
   const ppIcon   = document.getElementById('ppIcon');
   const prevBtn  = document.getElementById('prevBtn');
   const nextBtn  = document.getElementById('nextBtn');
@@ -52,6 +51,9 @@ function initMusicPlayer() {
     });
   }
   
+  // 更新播放器UI状态
+  window.updateDriverMusicPlayerUI = updateUI;
+
   // 更新进度条和时间
   function updateProgress() {
     if (!audio.duration) return;
@@ -70,7 +72,7 @@ function initMusicPlayer() {
   }
 
   // 播放/暂停按钮
-  playBtn.addEventListener('click', () => {
+  playPauseBtn.addEventListener('click', () => {
     if (audio.paused) {
       audio.play();
       updateUI(true);
@@ -83,16 +85,8 @@ function initMusicPlayer() {
   // 点击专辑图标
   const albumCover = document.querySelector('.album-cover');
   if (albumCover) {
-    albumCover.addEventListener('click', () => playBtn.click());
+    albumCover.addEventListener('click', () => playPauseBtn.click());
   }
-
-  // 停止按钮
-  stopBtn.addEventListener('click', () => {
-    audio.pause();
-    audio.currentTime = 0;
-    updateUI(false);
-    updateProgress();
-  });
 
   // 上一首/下一首
   prevBtn.addEventListener('click', () => {

@@ -125,23 +125,18 @@ async function toggleRecording() {
 async function processVideo() {
   showLoading('正在处理视频...');
   try {
-    const currentUser = session.get('currentUser')
-    const response = await fetch('http://localhost:8000/api/process-video', { 
+    const currentUser = session.get('currentUser');
+    const response = await fetch('http://localhost:8000/api/process-video', {
       method: 'POST',
-      headers: {
-              'X-User-ID': currentUser?.id   // 从登录状态中获得
-            }
+      headers: { 'X-User-ID': currentUser?.id }
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw errorData;
-    }
     const data = await response.json();
 
-    if (data.message) {
-      showSuccess('视频处理完成: ' + data.message);
+    if (data.alert) {
+      showError(data.message + ' 警报已触发，请说“解除警报”');
+      //toggleRecording(); // 自动激活语音识别
     } else {
-      showSuccess('视频处理请求已发送');
+      showSuccess(data.message || '视频处理请求已发送');
     }
   } catch (err) {
     showError('视频处理失败: ' + (err.detail || '服务器错误'));
@@ -150,6 +145,7 @@ async function processVideo() {
     hideLoading();
   }
 }
+
 
 // 处理手势识别
 async function processGesture() {

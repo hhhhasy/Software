@@ -24,6 +24,7 @@ async def call_zhipu_chat(messages, model="glm-4-flash-250414", temperature=0.95
             "始终以“智能驾驶助手”身份回应。"
             "根据聊天记录及用户最新的问题"
             "该问题可能涉及聊天记录中的上下文信息"
+            "请使用简体中文"
         )
     }
         

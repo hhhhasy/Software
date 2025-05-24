@@ -9,7 +9,7 @@ import session from '../utils/session.js';
 const PAGE_ACCESS = {
   'login.html': ['guest'],
   'register.html': ['guest'],
-  'home.html': ['driver'],
+  'driver.html': ['driver'],
   'passenger.html': ['user'],
   'admin.html': ['admin']
 };
@@ -39,13 +39,13 @@ function hasPageAccess(role, page) {
 /**
  * 重定向到用户对应的首页
  */
-function redirectToHomePage(role) {
+function redirectToDriverPage(role) {
   switch (role) {
     case 'admin':
       window.location.href = 'admin.html';
       break;
     case 'driver':
-      window.location.href = 'home.html';
+      window.location.href = 'driver.html';
       break;
     case 'user':
       window.location.href = 'passenger.html';
@@ -68,7 +68,7 @@ function checkAuthentication() {
   // 如果是登录或注册页，且用户已登录，重定向到对应首页
   if ((currentPage === 'login.html' || currentPage === 'register.html') && currentUser) {
     console.log('用户已登录，重定向到首页');
-    redirectToHomePage(userRole);
+    redirectToDriverPage(userRole);
     return;
   }
   
@@ -80,7 +80,7 @@ function checkAuthentication() {
       window.location.href = 'login.html';
     } else {
       // 已登录但权限不符，重定向到对应首页
-      redirectToHomePage(userRole);
+      redirectToDriverPage(userRole);
     }
     return;
   }

@@ -38,7 +38,7 @@ async function handleLogin(e) {
     if(role === 'admin'){
       window.location.href = 'admin.html';
     } else if(role === 'driver'){
-      window.location.href = 'home.html';
+      window.location.href = 'driver.html';
     } else if(role === 'user'){
       window.location.href = 'passenger.html';
     } else if(role === 'maintenance_personne'){

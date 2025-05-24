@@ -479,7 +479,7 @@ function initCardHoverEffects() {
 /**
  * 初始化主界面
  */
-function initHomePage() {
+function initDriverPage() {
   displayUserInfo();
   initLogout();
   initTabSwitching();
@@ -497,7 +497,7 @@ function initHomePage() {
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', initHomePage);
+document.addEventListener('DOMContentLoaded', initDriverPage);
 
 // 导出函数供其他模块使用
 export { initMusicPlayer, initTabSwitching };

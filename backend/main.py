@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware  # ✅ 必须有这行
 from zhipu import call_zhipu_chat  # 确保模块路径正确
 from sqlalchemy.orm.exc import NoResultFound
 from openvino.runtime import Core
-
+import asyncio
 # ============= 配置 =============
 # 确保所有路径使用绝对路径，避免当前工作目录影响
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -95,9 +95,10 @@ class SpeechResponse(BaseModel):
 
 class VideoResponse(BaseModel):
     message: str
-
+    alert: bool = False
 class GestureResponse(BaseModel):
     gesture: Optional[str] = None
+    resp_text: str
 
 class LogEntry(BaseModel):
     timestamp: str
@@ -176,6 +177,24 @@ def get_whisper_model():
 
 # 初始化语音引擎
 tts_engine = pyttsx3.init()
+
+# ========== 持续警报相关 ==========
+alert_active = False
+alert_task = None
+
+async def continuous_warning():
+    global alert_active
+    num = 0
+    while alert_active and num < 50:
+        num += 1
+        try:
+            tts_engine.say("注意力偏离，请集中注意力！如需解除警报，请说‘解除警报’ 或者 做 ‘OK’ 手势。")
+            tts_engine.runAndWait()
+        except Exception as e:
+            logger.warning(f"持续警报播报失败: {str(e)}")
+            break
+        await asyncio.sleep(2)
+
 
 # 预加载模型
 @app.on_event("startup")
@@ -354,6 +373,7 @@ async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Se
     """
     语音转文本API，识别语音指令并执行相应操作
     """
+    global alert_active
     try:
         # 保存临时音频文件
         with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
@@ -369,10 +389,24 @@ async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Se
             result = model.transcribe(converted_path, language='zh')
             recognized_text = result["text"]
             logger.info(f"语音识别结果: {recognized_text}")
-            
+
             # 删除临时文件
             os.unlink(tmp_path)
-            
+
+            # 解除警报关键词
+            if alert_active:
+                if "解除警报" in recognized_text or "取消警报" in recognized_text:
+                    alert_active = False
+                    try:
+                        # 使用语音引擎进行语音输出
+                        tts_engine.say("警报已解除")
+                        tts_engine.runAndWait()
+                    except Exception as e:
+                        logger.warning(f"语音输出失败: {str(e)}")
+                    return {"command": recognized_text, "text": "警报已解除"}
+                else:
+                    return {"command": recognized_text, "text": "警报未解除"}
+
             # 检查是否匹配预设指令
             response = get_command_response(recognized_text)
             if response:
@@ -495,6 +529,7 @@ async def process_video():
     """
     驾驶员状态姿态监测API，检测驾驶员是否有分心驾驶
     """
+    global alert_active, alert_task
     logger.info("启动驾驶员状态监测")
     mp_face_mesh = None
     face_mesh = None
@@ -595,15 +630,13 @@ async def process_video():
                     gaze_vector = gaze_det(gaze_input)[gaze_det.output(0)][0]
 
                     # 判断是否注视前方（阈值可调）
-                    if abs(gaze_vector[0]) > 0.3 or abs(gaze_vector[1]) > 0.3:
+                    if abs(gaze_vector[0]) > 0.4 or abs(gaze_vector[1]) > 0.4:
                         warning = "注意力偏离前方，请集中注意力！"
-                        if warning not in warnings:
-                            warnings.append(warning)
-                            try:
-                                tts_engine.say(warning)
-                                tts_engine.runAndWait()
-                            except Exception as e:
-                                logger.warning(f"语音输出失败: {str(e)}")
+                        if not alert_active:
+                            alert_active = True
+                            if alert_task is None or alert_task.done():
+                                alert_task = asyncio.create_task(continuous_warning())
+                        return {"message": warning, "alert": True}
 
                     # 画框显示
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
@@ -734,7 +767,7 @@ async def process_video():
         else:
             logger.info("未检测到异常情况")
         
-        return {"message": "视频处理完成"}
+        return {"message": "视频处理完成", "alert": False}
     except Exception as e:
         logger.error(f"视频处理错误: {str(e)}")
         raise HTTPException(
@@ -752,6 +785,7 @@ async def process_gesture(request: Request):
     """
     手势识别API，识别并响应用户的手势控制
     """
+    global alert_active
     mp_hands = None
     hands = None
     cap = None
@@ -866,6 +900,17 @@ async def process_gesture(request: Request):
                 }
                 resp_text = gesture_resp_map.get(recognized_label, "")
                 log_multimodal(user_id, "gesture", recognized_label, resp_text)
+
+                if alert_active and recognized_label == 'OK':
+                    alert_active = False
+                    resp_text = '警报已解除'
+                    try:
+                        # 使用语音引擎进行语音输出
+                        tts_engine.say("警报已解除")
+                        tts_engine.runAndWait()
+                    except Exception as e:
+                        logger.warning(f"语音输出失败: {str(e)}")
+
                 # 显示1秒后退出
                 if time.time() - display_start > 1.0:
                     break
@@ -875,7 +920,8 @@ async def process_gesture(request: Request):
             if cv2.waitKey(1) & 0xFF == 27:
                 break
 
-        return {'gesture': recognized_label}
+        return {'gesture': recognized_label,
+                'resp_text': resp_text }
     except Exception as e:
         logger.error(f"手势识别错误: {str(e)}")
         raise HTTPException(

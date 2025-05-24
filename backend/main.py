@@ -61,7 +61,7 @@ def log_multimodal(user_id: int,
 
 # ============= 数据库配置（MySQL） =============
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:Aaa041082@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -832,6 +832,11 @@ async def process_gesture(request: Request):
         recognized_label = None
         display_start = None
         start_time = time.time()
+        
+        # 新增稳定性检测相关变量
+        stable_threshold = 5  # 需要连续5帧相同手势
+        current_stable_count = 0
+        last_gesture = None
 
         # 最多运行10秒或者识别到手势
         while (time.time() - start_time < 10) and recognized_label is None:
@@ -853,10 +858,25 @@ async def process_gesture(request: Request):
                 # 预测手势
                 try:
                     pred = clf.predict([row])[0]
-                    recognized_label = GESTURES[pred]
-                    logger.info(f"识别到手势: {recognized_label}")
-                    display_start = time.time()
-                    mp_draw.draw_landmarks(img, lm, mp_hands.HAND_CONNECTIONS)
+                    current_gesture = GESTURES[pred]
+
+                    # 稳定性检测逻辑
+                    if current_gesture == last_gesture:
+                        current_stable_count += 1
+                    else:
+                        current_stable_count = 1
+                        last_gesture = current_gesture
+
+                    # 达到稳定阈值后触发识别
+                    if current_stable_count >= stable_threshold:
+                        recognized_label = current_gesture
+                        logger.info(f"稳定识别到手势: {recognized_label}")
+                        display_start = time.time()
+                        mp_draw.draw_landmarks(img, lm, mp_hands.HAND_CONNECTIONS)
+                        # 重置检测状态
+                        current_stable_count = 0
+                        last_gesture = None
+                        
                 except Exception as e:
                     logger.error(f"手势预测错误: {str(e)}")
 

@@ -191,7 +191,7 @@ window.addEventListener('click', (e) => {
  * 初始化管理员退出登录按钮
  */
 function initAdminLogout() {
-  const logoutBtn = document.getElementById('adminLogout');
+  const logoutBtn = document.getElementById('logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       // 先移除特定的会话数据，而不是清除所有localStorage

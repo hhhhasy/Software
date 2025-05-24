@@ -1,3 +1,6 @@
+import session from '../utils/session.js';
+import { showLoading as showGlobalLoading, hideLoading as hideGlobalLoading, showError as showGlobalError, showSuccess as showGlobalSuccess } from '../utils/uiUtils.js';
+
 /**
  * 维护人员界面逻辑
  */
@@ -44,9 +47,9 @@ const securityScanBtn = document.getElementById('securityScanBtn');
  * 初始化页面
  */
 function init() {
-    // 设置用户名
-    const user = localStorage.getItem('username') || '已登录';
-    maintainerUser.textContent = user;
+    // 统一会话管理
+    const currentUser = session.get('currentUser');
+    maintainerUser.textContent = currentUser ? currentUser.username : '未登录';
 
     // 加载日志
     loadLogs();
@@ -87,11 +90,9 @@ function bindEvents() {
         }
     });
 
-    // 退出登录
+    // 修改登出逻辑
     maintainerLogout.addEventListener('click', () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        localStorage.removeItem('role');
+        session.clear();
         window.location.replace('login.html');
     });
 
@@ -112,7 +113,7 @@ function bindEvents() {
  */
 async function loadLogs() {
     try {
-        logContainer.innerHTML = '<div class="loading">加载中...</div>';
+        showGlobalLoading('日志加载中...');
         
         // 构建请求参数
         const requestData = {
@@ -176,8 +177,10 @@ async function loadLogs() {
             logContainer.appendChild(logEntry);
         });
     } catch (error) {
-        console.error('加载日志失败:', error);
+        showGlobalError('加载日志失败: ' + error.message);
         logContainer.innerHTML = `<div class="error-message">加载日志失败: ${error.message}</div>`;
+    } finally {
+        hideGlobalLoading();
     }
 }
 
@@ -280,37 +283,55 @@ function hideModal() {
 /**
  * 执行维护操作
  */
-function executeAction() {
+async function executeAction() {
     let statusMessage = '';
-    
-    switch (currentAction) {
-        case 'cleanCache':
-            statusMessage = '缓存清理完成！共清理了56个临时文件和734MB空间。';
-            break;
-        case 'dbMaintenance':
-            statusMessage = '数据库维护完成！数据库结构已优化，查询性能提升约15%。';
-            break;
-        case 'restartServices':
-            statusMessage = '系统服务已成功重启！所有服务现在正常运行。';
-            break;
-        case 'securityScan':
-            statusMessage = '安全扫描完成！未发现严重安全隐患。2个低风险警告已记录。';
-            break;
-        default:
-            break;
-    }
-    
-    if (statusMessage) {
-        hideModal();
-        
-        // 显示操作完成状态
-        setTimeout(() => {
-            showConfirmation('操作成功', statusMessage);
-            confirmAction.style.display = 'none';
-            cancelAction.textContent = '关闭';
-        }, 1000);
-    } else {
-        hideModal();
+    let actionDescriptionForLoading = '执行操作中...';
+    let success = false;
+
+    hideModal(); // Hide modal immediately
+    showGlobalLoading(actionDescriptionForLoading);
+
+    try {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        switch (currentAction) {
+            case 'cleanCache':
+                actionDescriptionForLoading = '正在清理缓存...';
+                statusMessage = '缓存清理完成！共清理了56个临时文件和734MB空间。';
+                success = true;
+                break;
+            case 'dbMaintenance':
+                actionDescriptionForLoading = '正在执行数据库维护...';
+                statusMessage = '数据库维护完成！数据库结构已优化，查询性能提升约15%。';
+                success = true;
+                break;
+            case 'restartServices':
+                actionDescriptionForLoading = '正在重启服务...';
+                statusMessage = '系统服务已成功重启！所有服务现在正常运行。';
+                success = true;
+                break;
+            case 'securityScan':
+                actionDescriptionForLoading = '正在执行安全扫描...';
+                statusMessage = '安全扫描完成！未发现严重安全隐患。2个低风险警告已记录。';
+                success = true;
+                break;
+            default:
+                showGlobalError('未知的维护操作。');
+                break;
+        }
+
+        if (success) {
+            showGlobalSuccess(statusMessage);
+        } else if (currentAction) {
+            showGlobalError(`操作 ${currentAction} 失败。`);
+        }
+    } catch (err) {
+        showGlobalError(`执行操作 ${currentAction} 失败: ${err.message}`);
+        console.error(`Error during ${currentAction}:`, err);
+    } finally {
+        hideGlobalLoading();
+        currentAction = null; // Reset current action
     }
 }
 

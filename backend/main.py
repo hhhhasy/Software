@@ -23,14 +23,19 @@ from zhipu import call_zhipu_chat  # 确保模块路径正确
 from sqlalchemy.orm.exc import NoResultFound
 from openvino.runtime import Core
 
-
+# ============= 配置 =============
+# 确保所有路径使用绝对路径，避免当前工作目录影响
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_PATH = os.path.join(BASE_DIR, "api.log")
+MODEL_DIR = os.path.join(BASE_DIR, 'model')
+os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
 
 # ============= 日志配置 =============
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("api.log"),
+        logging.FileHandler(LOG_PATH),
         logging.StreamHandler()
     ]
 )
@@ -54,15 +59,9 @@ def log_multimodal(user_id: int,
     )
 
 
-# ============= 配置 =============
-MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model')
-os.makedirs(MODEL_DIR, exist_ok=True)  # 确保模型目录存在
-
-
-
-# 数据库配置（MySQL）
+# ============= 数据库配置（MySQL） =============
 # 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:abc000000@localhost:3306/software"
+DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -456,7 +455,7 @@ async def speech_to_text(request: Request, audio: UploadFile = File(...), db: Se
 模型配置如果有问题，请删除intel文件夹，然后参考模型下载.md内容下载模型
 '''
 # 模型路径
-VINO_MODEL_DIR = "./intel"
+VINO_MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "intel")
 
 # 加载 OpenVINO 模型
 core = Core()
@@ -955,7 +954,7 @@ async def update_user(user_id: int,user_data: UserUpdate,db: Session = Depends(g
         )
 
 @app.delete("/api/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
     """删除用户"""
     try:
         user = db.query(User).filter(User.id == user_id).first()
@@ -966,7 +965,10 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
             )
 
         # 检查是否删除自己
-        if user.id == current_user.id:
+        user_id_str = request.headers.get("X-User-ID")
+        current_user_id = int(user_id_str) if user_id_str and user_id_str.isdigit() else 0
+        
+        if user.id == current_user_id:
             logger.warning(f"用户ID: {user_id} 尝试删除自己")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -998,9 +1000,8 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
     - 按时间倒序排列的日志条目
     """
     try:
-        log_path = os.path.join(os.path.dirname(__file__), "api.log")
-        if not os.path.exists(log_path):
-            logger.warning(f"日志文件不存在: {log_path}")
+        if not os.path.exists(LOG_PATH):
+            logger.warning(f"日志文件不存在: {LOG_PATH}")
             return {"logs": [], "total_entries": 0}
 
         logs = []
@@ -1019,7 +1020,7 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
 
         for encoding in encodings_to_try:
             try:
-                with open(log_path, "r", encoding=encoding) as f:
+                with open(LOG_PATH, "r", encoding=encoding) as f:
                     log_lines = f.readlines()
                 logger.info(f"使用 {encoding} 编码成功读取日志文件")
                 break  # 如果成功读取，跳出循环

@@ -98,6 +98,7 @@ class VideoResponse(BaseModel):
     alert: bool = False
 class GestureResponse(BaseModel):
     gesture: Optional[str] = None
+    resp_text: str
 
 class LogEntry(BaseModel):
     timestamp: str
@@ -882,6 +883,13 @@ async def process_gesture(request: Request):
 
                 if alert_active and recognized_label == 'OK':
                     alert_active = False
+                    resp_text = '警报已解除'
+                    try:
+                        # 使用语音引擎进行语音输出
+                        tts_engine.say("警报已解除")
+                        tts_engine.runAndWait()
+                    except Exception as e:
+                        logger.warning(f"语音输出失败: {str(e)}")
 
                 # 显示1秒后退出
                 if time.time() - display_start > 1.0:
@@ -892,7 +900,8 @@ async def process_gesture(request: Request):
             if cv2.waitKey(1) & 0xFF == 27:
                 break
 
-        return {'gesture': recognized_label}
+        return {'gesture': recognized_label,
+                'resp_text': resp_text }
     except Exception as e:
         logger.error(f"手势识别错误: {str(e)}")
         raise HTTPException(

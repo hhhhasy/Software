@@ -79,6 +79,9 @@ async function toggleRecording() {
           if(textInput) textInput.textContent = text;
           showSuccess('语音识别成功: ' + text);
           handleVoiceCommand(text);
+          if(text.trim().includes('警报已解除')) {
+            processVideo();
+          }
         } catch (err) {
           showError('语音识别失败: ' + (err.detail || '服务器错误'));
           console.error('语音识别错误:', err);
@@ -90,7 +93,7 @@ async function toggleRecording() {
       mediaRecorder.start();
       hideLoading(); // 隐藏“准备录音”的加载
       isRecording = true;
-      if(voiceBtn) voiceBtn.textContent = '⏹ 停止录音';
+      if(voiceBtn) voiceBtn.textContent = '录音中...';
 
       // 10秒后自动停止
       setTimeout(() => {
@@ -101,7 +104,7 @@ async function toggleRecording() {
           if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入';
           showSuccess('录音已自动停止');
         }
-      }, 10000);
+      }, 5000);
 
     } catch (err) {
       hideLoading();
@@ -110,15 +113,16 @@ async function toggleRecording() {
       isRecording = false; // 确保状态被重置
       if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入'; // 恢复按钮文本
     }
-  } else {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-    }
-    if(currentStream) currentStream.getTracks().forEach(track => track.stop()); // 释放麦克风
-    isRecording = false;
-    if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入';
-    hideLoading(); // 如果之前有加载指示，确保隐藏
   }
+  // else {
+  //   if (mediaRecorder && mediaRecorder.state === "recording") {
+  //       mediaRecorder.stop();
+  //   }
+  //   if(currentStream) currentStream.getTracks().forEach(track => track.stop()); // 释放麦克风
+  //   isRecording = false;
+  //   if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入';
+  //   hideLoading(); // 如果之前有加载指示，确保隐藏
+  // }
 }
 
 // 处理视频识别
@@ -163,7 +167,9 @@ async function processGesture() {
       throw errorData;
     }
     const data = await response.json();
-    
+    // if (data.resp_text.trim().includes('警报已解除')) {
+    //   processVideo();
+    // }
     if (data.gesture) {
       let gestureMessage = '未知手势';
       switch (data.gesture) {

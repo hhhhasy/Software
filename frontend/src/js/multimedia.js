@@ -13,6 +13,9 @@ function handleVoiceCommand(commandText) {
     if (audio) {
       audio.play();
       showSuccess("🎵 已播放音乐");
+      if (window.updatePassengerMusicUI) { // 检查函数是否存在
+        window.updatePassengerMusicUI(true); // 更新乘客界面的播放按钮状态
+      }
     } else {
       showError("找不到音频播放器");
     }
@@ -22,6 +25,9 @@ function handleVoiceCommand(commandText) {
     if (audio) {
       audio.pause();
       showSuccess("🎵 已暂停音乐");
+      if (window.updatePassengerMusicUI) { // 检查函数是否存在
+        window.updatePassengerMusicUI(false); // 更新乘客界面的播放按钮状态
+      }
     } else {
       showError("找不到音频播放器");
     }

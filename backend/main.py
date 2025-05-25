@@ -3,26 +3,31 @@ import time
 import logging
 import tempfile
 import re
-from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
-from sqlalchemy import Column, Integer, String, DateTime, create_engine
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-import whisper
-import pyttsx3
-import cv2
 import json
 import numpy as np
 import joblib
+import asyncio
+import cv2
+import pyttsx3
+import whisper
 import mediapipe as mp
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from fastapi.middleware.cors import CORSMiddleware  # ✅ 必须有这行
-from zhipu import call_zhipu_chat  # 确保模块路径正确
+from typing import Optional, Dict, Any, List
+from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from openvino.runtime import Core
-import asyncio
+from datetime import datetime
+
+# 导入本地模块
+from models import (
+    User, UserMemory, get_db, create_tables,
+    UserLogin, UserRegister, LoginResponse, MessageResponse, 
+    SpeechResponse, VideoResponse, GestureResponse, LogEntry,
+    LogResponse, AIResponse, ChatRequest, UserUpdate, UserResponse
+)
+from zhipu import call_zhipu_chat
+
 # ============= 配置 =============
 # 确保所有路径使用绝对路径，避免当前工作目录影响
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +45,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("api")
-mmlog  = logging.getLogger("multimodal")        # 多模态行为的日志
+mmlog = logging.getLogger("multimodal")        # 多模态行为的日志
 
 # ---------- 多模态日志工具 ----------
 def log_multimodal(user_id: int,
@@ -51,90 +56,12 @@ def log_multimodal(user_id: int,
     结构化写多模态交互日志
     - user_id : 用户 ID（0 表示匿名）
     - modality: speech / gesture / vision
-    - content : 用户输入 (“播放音乐”, “fist”…)
-    - response: 系统反馈 (“为您播放默认播放列表”…)
+    - content : 用户输入 ("播放音乐", "fist"…)
+    - response: 系统反馈 ("为您播放默认播放列表"…)
     """
     mmlog.info(
         f"user:{user_id} | modality:{modality} | content:{content} | response:{response}"
     )
-
-
-# ============= 数据库配置（MySQL） =============
-# 请替换 user、password、host、port、dbname 为你的 MySQL 信息
-DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/software"
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# ============= 数据模型 =============
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    password = Column(String(255), nullable=False)  # 明文存储
-    role = Column(String(20), nullable=False, default="user")
-
-# ============= Pydantic 模型 =============
-class UserLogin(BaseModel):
-    username: str = Field(..., max_length=50)
-    password: str
-
-class UserRegister(UserLogin):
-    confirm_password: str
-
-class LoginResponse(BaseModel):
-    id: int
-    role: str
-
-class MessageResponse(BaseModel):
-    message: str
-
-class SpeechResponse(BaseModel):
-    command: str
-    text: str
-
-class VideoResponse(BaseModel):
-    message: str
-    alert: bool = False
-class GestureResponse(BaseModel):
-    gesture: Optional[str] = None
-    resp_text: str
-
-class LogEntry(BaseModel):
-    timestamp: str
-    level: str
-    source: str
-    message: str
-
-class LogResponse(BaseModel):
-    logs: List[LogEntry]
-    total_entries: int
-
-class AIResponse(BaseModel):
-    chatmessage:str
-
-
-class ChatRequest(BaseModel):
-    messages: List[Dict[str, str]]  # e.g. [{"role": "user", "content": "你是谁？"}]
-
-
-class UserMemory(Base):
-    __tablename__ = "user_chat_memory"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, unique=True, nullable=False)
-    content = Column(String(length=10000), nullable=False)  # JSON格式
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-class UserUpdate(BaseModel):
-    username: Optional[str] = None
-    password: Optional[str] = None
-    role: Optional[str] = None
-
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    password: str
-    role: str
 
 # ============= 应用初始化 =============
 app = FastAPI(
@@ -188,13 +115,12 @@ async def continuous_warning():
     while alert_active and num < 50:
         num += 1
         try:
-            tts_engine.say("注意力偏离，请集中注意力！如需解除警报，请说‘解除警报’ 或者 做 ‘OK’ 手势。")
+            tts_engine.say("注意力偏离，请集中注意力！如需解除警报，请说'解除警报' 或者 做 'OK' 手势。")
             tts_engine.runAndWait()
         except Exception as e:
             logger.warning(f"持续警报播报失败: {str(e)}")
             break
         await asyncio.sleep(2)
-
 
 # 预加载模型
 @app.on_event("startup")
@@ -205,14 +131,6 @@ def preload_whisper_model():
     except Exception as e:
         logger.error(f"预加载失败: {str(e)}")
         raise RuntimeError(f"Whisper 模型预加载失败: {e}")
-
-# 依赖项：获取 DB 会话
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # 请求日志中间件
 @app.middleware("http")
@@ -270,7 +188,6 @@ def get_command_response(text: str) -> Optional[str]:
     
     return None
 
-
 import subprocess
 import os
 
@@ -306,7 +223,6 @@ def convert_to_whisper_format(input_path, output_path=None):
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"音频转换失败: {e}")
     return output_path
-
 
 # ============= API路由定义 =============
 
@@ -524,6 +440,7 @@ def safe_crop(image, center_x, center_y, size):
     if cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
         return None
     return cropped
+
 @app.post('/api/process-video', response_model=VideoResponse)
 async def process_video():
     """
@@ -1143,6 +1060,6 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
 if __name__ == "__main__":
     import uvicorn
     logger.info("创建数据库表（如果不存在）")
-    Base.metadata.create_all(bind=engine)
+    create_tables()
     logger.info("启动API服务...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -4,7 +4,7 @@
 """
 import os
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import QueuePool
@@ -145,9 +145,9 @@ class UserResponse(BaseModel):
     username: str
     password: str  # TODO: 未来改为不返回密码
     role: str
-    
-    class Config:
-        orm_mode = True  # 允许从ORM对象创建
+
+    # Pydantic配置
+    model_config = ConfigDict(from_attributes=True)
 
 class MessageResponse(BaseModel):
     """通用消息响应模型"""

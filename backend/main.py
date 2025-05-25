@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from contextlib import asynccontextmanager
 
 # 导入本地模块
 from models import (
@@ -31,17 +32,35 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(LOG_PATH),
+        logging.FileHandler(LOG_PATH, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger("api")
 
 # ============= 应用初始化 =============
+
+# 预加载模型
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动前执行
+    try:
+        logger.info("FastAPI 启动，预加载模型中...")
+        services.get_whisper_model()
+    except Exception as e:
+        logger.error(f"预加载失败: {str(e)}")
+        raise RuntimeError(f"模型预加载失败: {e}")
+    
+    yield  # 应用运行期间
+    
+    # 关闭前执行
+    logger.info("FastAPI 关闭中...")
+
 app = FastAPI(
     title="智能驾驶助手 API",
     description="提供语音识别、头部姿态监测和手势识别功能",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan # 使用自定义生命周期管理器
 )
 
 # CORS配置
@@ -61,16 +80,6 @@ app.add_middleware(
     allow_headers=["*"],
     max_age=3600,               # 预检请求缓存时间
 )
-
-# 预加载模型
-@app.on_event("startup")
-def preload_models():
-    try:
-        logger.info("FastAPI 启动，预加载模型中...")
-        services.get_whisper_model()
-    except Exception as e:
-        logger.error(f"预加载失败: {str(e)}")
-        raise RuntimeError(f"模型预加载失败: {e}")
 
 # 请求日志中间件
 @app.middleware("http")
@@ -396,5 +405,4 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
 # ============= 应用启动 =============
 if __name__ == "__main__":
     import uvicorn
-    logger.info("启动API服务...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

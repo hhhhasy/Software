@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 # 导入本地模块
 from models import (
-    User, UserMemory, get_db, create_tables,
+    User, UserMemory, get_db,
     UserLogin, UserRegister, LoginResponse, MessageResponse, 
     SpeechResponse, VideoResponse, GestureResponse, LogEntry,
     LogResponse, AIResponse, ChatRequest, UserUpdate, UserResponse
@@ -396,7 +396,5 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
 # ============= 应用启动 =============
 if __name__ == "__main__":
     import uvicorn
-    logger.info("创建数据库表（如果不存在）")
-    create_tables()
     logger.info("启动API服务...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

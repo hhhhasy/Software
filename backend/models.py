@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import QueuePool
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from sqlalchemy import Text # 用于存储JSON等复杂数据
 
@@ -93,7 +93,7 @@ class UserMemory(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     content = Column(String(length=10000), nullable=False, default="[]")  # JSON格式
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # 关系: 属于某个用户
     user = relationship("User", back_populates="memory")
@@ -211,7 +211,7 @@ class UserPreference(Base):
     # 快捷指令/别名 (JSON格式，例如 {"回家": "导航到家庭住址", "安静": "暂停音乐并静音"})
     command_aliases = Column(Text, nullable=True, default="{}")
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="preference") # 假设User模型中添加反向关系
 

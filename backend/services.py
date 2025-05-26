@@ -755,7 +755,7 @@ async def update_common_commands(user_id: int, command_text: str, db: Session):
 
         commands_dict = json.loads(preference.common_commands or "{}")
         commands_dict[command_text] = commands_dict.get(command_text, 0) + 1
-        preference.common_commands = json.dumps(commands_dict)
+        preference.common_commands = json.dumps(commands_dict, ensure_ascii=False)
         db.commit()
         logger.info(f"用户 {user_id} 常用指令 '{command_text}' 已更新")
     except Exception as e:

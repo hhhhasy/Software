@@ -11,7 +11,7 @@
  Target Server Version : 80036
  File Encoding         : 65001
 
- Date: 26/05/2025 HH:MM:SS -- 请替换为当前日期和时间
+ Date: 26/05/2025
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,7 @@ CREATE TABLE `user_preferences`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户个性化偏好设置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Records of user_preferences (示例数据，可选)
+-- Records of user_preferences (示例数据)
 -- ----------------------------
 -- 假设用户ID为3 (asy) 有一些偏好设置
 -- INSERT INTO `user_preferences` (`user_id`, `common_commands`, `interaction_habits`, `command_aliases`) VALUES

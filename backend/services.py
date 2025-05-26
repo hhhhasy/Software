@@ -22,6 +22,7 @@ from openvino.runtime import Core
 from fastapi import HTTPException, status
 from models import UserMemory
 from zhipu import call_zhipu_chat
+from models import UserPreference
 
 # 配置路径
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -151,6 +152,7 @@ async def process_speech(audio_path: str, user_id: int, db: Session) -> Dict[str
                 logger.warning(f"语音输出失败: {str(e)}")
             
             log_multimodal(user_id, "speech", recognized_text, response)
+            await update_common_commands(user_id, recognized_text, db)
             return {
                 "command": recognized_text,
                 "text": response
@@ -742,3 +744,20 @@ async def process_gesture(user_id: int):
         if cap is not None:
             cap.release()
         cv2.destroyAllWindows()
+
+
+async def update_common_commands(user_id: int, command_text: str, db: Session):
+    try:
+        preference = db.query(UserPreference).filter(UserPreference.user_id == user_id).first()
+        if not preference:
+            preference = UserPreference(user_id=user_id, common_commands="{}")
+            db.add(preference)
+
+        commands_dict = json.loads(preference.common_commands or "{}")
+        commands_dict[command_text] = commands_dict.get(command_text, 0) + 1
+        preference.common_commands = json.dumps(commands_dict)
+        db.commit()
+        logger.info(f"用户 {user_id} 常用指令 '{command_text}' 已更新")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"更新用户 {user_id} 常用指令失败: {e}")

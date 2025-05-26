@@ -10,6 +10,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import QueuePool
 from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import Text # 用于存储JSON等复杂数据
 
 # 加载环境变量
 load_dotenv()
@@ -76,6 +77,8 @@ class User(Base):
     # 关系: 一个用户有一个聊天记忆
     memory = relationship("UserMemory", back_populates="user", uselist=False, 
                          cascade="all, delete-orphan")
+    
+    preference = relationship("UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     def __repr__(self):
         """对象的字符串表示"""
@@ -192,3 +195,47 @@ class ChatRequest(BaseModel):
 class AIResponse(BaseModel):
     """AI响应模型"""
     chatmessage: str
+
+
+class UserPreference(Base):
+    __tablename__ = "user_preferences"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False) # 每个用户一份配置
+
+    # 存储常用指令 (可以是JSON格式，例如 {"指令文本": 频率, ...} 或列表)
+    common_commands = Column(Text, nullable=True, default="{}")
+
+    # 存储交互习惯 (可以是JSON格式，例如 {"preferred_confirmation_modality": "voice", ...})
+    interaction_habits = Column(Text, nullable=True, default="{}")
+
+    # 快捷指令/别名 (JSON格式，例如 {"回家": "导航到家庭住址", "安静": "暂停音乐并静音"})
+    command_aliases = Column(Text, nullable=True, default="{}")
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="preference") # 假设User模型中添加反向关系
+
+
+class CommonCommandEntry(BaseModel):
+    command: str
+    frequency: int
+
+class InteractionHabits(BaseModel):
+    preferred_confirmation_modality: Optional[str] = None # e.g., "voice", "gesture", "visual"
+    # 可以根据需要添加更多习惯字段
+    # e.g., call_handling_preference: Optional[str] = None # "answer", "mute", "reject"
+
+class CommandAliasEntry(BaseModel):
+    alias: str
+    original_command: str
+
+class UserPreferenceData(BaseModel):
+    common_commands: Optional[List[CommonCommandEntry]] = None
+    interaction_habits: Optional[InteractionHabits] = None
+    command_aliases: Optional[List[CommandAliasEntry]] = None
+
+class UserPreferenceResponse(UserPreferenceData):
+    user_id: int
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

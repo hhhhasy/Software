@@ -25,7 +25,7 @@ class ZhipuConfig(BaseModel):
     default_model: str = "glm-4-flash-250414"
     timeout: int = 30
     max_retries: int = 3
-    retry_delay: int = 2
+    retry_delay: int = 200
     
     @property
     def headers(self) -> Dict[str, str]:

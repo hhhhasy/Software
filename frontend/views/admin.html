@@ -63,40 +63,40 @@
             </table>
         </div>
 
-        <!-- 系统日志面板 -->
-        <div class="management-panel">
-            <div class="neon-header">
-                <h3><i class="fas fa-clipboard-list"></i> 系统日志</h3>
+      <!-- 系统日志面板 -->
+      <div class="management-panel">
+        <div class="neon-header">
+          <h3>📋 系统日志</h3>
+          <div class="panel-actions">
+            <div class="filter-group">
+              <select id="logLevelFilter">
+                <option value="">所有级别</option>
+                <option value="INFO">信息</option>
+                <option value="WARNING">警告</option>
+                <option value="ERROR">错误</option>
+                <option value="DEBUG">调试</option>
+                <option value="CRITICAL">严重</option>
+              </select>
             </div>
-            
-            <div class="log-container">
-                <div class="log-entry">
-                    <span class="log-time">2025-05-13 09:15:22</span>
-                    <span class="log-level info">INFO</span>
-                    <span class="log-message">系统初始化完成</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">2025-05-13 09:16:05</span>
-                    <span class="log-level success">SUCCESS</span>
-                    <span class="log-message">用户 admin 登录成功</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">2025-05-13 09:30:18</span>
-                    <span class="log-level warning">WARNING</span>
-                    <span class="log-message">用户 user1 多次尝试调用受限API</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">2025-05-13 10:05:42</span>
-                    <span class="log-level error">ERROR</span>
-                    <span class="log-message">语音识别服务暂时不可用</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">2025-05-13 10:12:37</span>
-                    <span class="log-level success">SUCCESS</span>
-                    <span class="log-message">用户 test_user 注册成功</span>
-                </div>
-            </div>
+            <button id="refreshLogs" class="action-btn">
+              <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+          </div>
         </div>
+        <div id="logContainer" class="log-container">
+          <!-- 日志内容将通过JavaScript动态加载 -->
+          <div class="loading">加载中...</div>
+        </div>
+        <div class="pagination">
+          <button id="prevLogs" class="page-btn" disabled>
+            <i class="fas fa-chevron-left"></i> 上一页
+          </button>
+          <span id="pageInfo">第 1 页 / 共 1 页</span>
+          <button id="nextLogs" class="page-btn" disabled>
+            下一页 <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 状态指示器 -->

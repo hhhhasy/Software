@@ -48,7 +48,6 @@
 .management-panel {
   background: var(--card-bg);
   border-radius: 15px;
-  padding: 2rem;
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(123, 97, 255, 0.2);
@@ -67,6 +66,37 @@
   display: flex;
   align-items: center;
   gap: 0.8rem;
+}
+
+/* 面板头部 */
+.panel-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(123, 97, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(0, 247, 255, 0.05), rgba(123, 97, 255, 0.05));
+}
+
+.panel-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 /* 用户表格 */
@@ -171,59 +201,176 @@
 
 /* 日志容器和条目样式 */
 .log-container {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  padding: 0.5rem;
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
-  font-family: monospace;
+  padding: 1rem 0;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+/* 加载中和空日志的样式 */
+.loading, .empty-logs, .error-message {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #9ca3af);
+  font-style: italic;
+}
+
+.error-message {
+  color: var(--danger);
 }
 
 .log-entry {
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  border-left: 3px solid #2a3a4a;
-  background: rgba(255, 255, 255, 0.05);
-  display: flex;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s;
+  display: grid;
+  grid-template-columns: 180px 80px 1fr 30px;
   gap: 1rem;
-  font-size: 0.9rem;
+  align-items: center;
 }
 
-.log-time {
+.log-entry:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.log-timestamp {
   color: #888;
-  flex: 0 0 180px;
+  font-size: 0.9rem;
+  font-family: 'Courier New', monospace;
 }
 
 .log-level {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-  flex: 0 0 70px;
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
   text-align: center;
+  min-width: 60px;
+  width: fit-content;
 }
 
-.log-level.info {
+.log-level.INFO {
   background: rgba(0, 120, 255, 0.2);
   color: #40a9ff;
 }
 
-.log-level.success {
+.log-level.SUCCESS {
   background: rgba(0, 200, 80, 0.2);
   color: #52c41a;
 }
 
-.log-level.warning {
+.log-level.WARNING {
   background: rgba(255, 180, 0, 0.2);
   color: #faad14;
 }
 
-.log-level.error {
+.log-level.ERROR {
   background: rgba(255, 70, 70, 0.2);
   color: #ff4d4f;
 }
 
+.log-level.DEBUG {
+  background: rgba(147, 155, 159, 0.2);
+  color: #93979f;
+}
+
+.log-level.CRITICAL {
+  background: rgba(255, 70, 70, 0.3);
+  color: #ff4d4f;
+  font-weight: 700;
+}
+
 .log-message {
+  color: var(--text-color, #f1f5f9);
+  word-break: break-word;
+  line-height: 1.4;
   flex: 1;
+}
+
+.log-expand {
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s;
+}
+
+.log-expand:hover {
+  color: var(--primary);
+}
+
+/* 日志详情样式 */
+.log-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #9ca3af);
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: 1rem;
+  color: var(--text-color, #f1f5f9);
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0.375rem;
+  word-break: break-word;
+}
+
+.detail-value.message {
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+/* 分页 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.page-btn {
+  background-color: rgba(0, 247, 255, 0.1);
+  color: var(--text);
+  border: 1px solid rgba(0, 247, 255, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: rgba(0, 247, 255, 0.2);
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#pageInfo {
+  color: #888;
 }
 
 .modal {

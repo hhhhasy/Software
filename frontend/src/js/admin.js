@@ -433,6 +433,140 @@ function bindLogEvents() {
 }
 
 /**
+ * 加载用户偏好信息
+ */
+async function loadUserPreferences() {
+  const preferencesContainer = document.getElementById('preferencesContainer');
+  if (!preferencesContainer) return;
+
+  try {
+    showGlobalLoading('加载用户偏好信息...');
+    preferencesContainer.innerHTML = '<div class="loading">加载中...</div>';
+
+    const response = await fetch(`${API_URL}/user-preferences`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('获取用户偏好信息失败');
+    }
+
+    const preferences = await response.json();
+
+    if (!preferences || preferences.length === 0) {
+      preferencesContainer.innerHTML = '<div class="preference-empty">没有找到用户偏好信息</div>';
+      return;
+    }
+
+    // 清空容器
+    preferencesContainer.innerHTML = '';
+
+    // 渲染每个用户的偏好信息
+    preferences.forEach(pref => {
+      const card = document.createElement('div');
+      card.className = 'preference-card';
+
+      // 卡片头部（用户名）
+      const header = document.createElement('div');
+      header.className = 'preference-header';
+      header.innerHTML = `<div class="preference-username">${pref.username || '未知用户'}</div>`;
+      card.appendChild(header);
+
+      // 常用命令部分
+      if (pref.common_commands && Object.keys(pref.common_commands).length > 0) {
+        const commonCmdSection = document.createElement('div');
+        commonCmdSection.className = 'preference-section';
+        commonCmdSection.innerHTML = '<div class="preference-section-title">常用命令</div>';
+
+        const commands = pref.common_commands;
+        for (const cmd in commands) {
+          const item = document.createElement('div');
+          item.className = 'preference-item';
+          item.innerHTML = `
+            <div class="preference-key">${cmd}</div>
+            <div class="preference-value">${commands[cmd]}</div>
+          `;
+          commonCmdSection.appendChild(item);
+        }
+
+        card.appendChild(commonCmdSection);
+      }
+
+      // 交互习惯部分
+      if (pref.interaction_habits && Object.keys(pref.interaction_habits).length > 0) {
+        const habitsSection = document.createElement('div');
+        habitsSection.className = 'preference-section';
+        habitsSection.innerHTML = '<div class="preference-section-title">交互习惯</div>';
+
+        const habits = pref.interaction_habits;
+        for (const habit in habits) {
+          const item = document.createElement('div');
+          item.className = 'preference-item';
+          item.innerHTML = `
+            <div class="preference-key">${habit}</div>
+            <div class="preference-value">${habits[habit]}</div>
+          `;
+          habitsSection.appendChild(item);
+        }
+
+        card.appendChild(habitsSection);
+      }
+
+      // 命令别名部分
+      if (pref.command_aliases && Object.keys(pref.command_aliases).length > 0) {
+        const aliasesSection = document.createElement('div');
+        aliasesSection.className = 'preference-section';
+        aliasesSection.innerHTML = '<div class="preference-section-title">命令别名</div>';
+
+        const aliases = pref.command_aliases;
+        for (const alias in aliases) {
+          const item = document.createElement('div');
+          item.className = 'preference-item';
+          item.innerHTML = `
+            <div class="preference-key">${alias}</div>
+            <div class="preference-value">${aliases[alias]}</div>
+          `;
+          aliasesSection.appendChild(item);
+        }
+
+        card.appendChild(aliasesSection);
+      }
+
+      // 如果没有任何偏好信息
+      if (!card.querySelector('.preference-section')) {
+        const emptyInfo = document.createElement('div');
+        emptyInfo.className = 'preference-empty';
+        emptyInfo.textContent = '该用户没有设置偏好信息';
+        card.appendChild(emptyInfo);
+      }
+
+      preferencesContainer.appendChild(card);
+    });
+
+  } catch (error) {
+    showGlobalError('加载用户偏好信息失败: ' + error.message);
+    preferencesContainer.innerHTML = `<div class="error-message">加载失败: ${error.message}</div>`;
+  } finally {
+    hideGlobalLoading();
+  }
+}
+
+/**
+ * 绑定用户偏好信息相关事件
+ */
+function bindPreferenceEvents() {
+  const refreshPreferencesBtn = document.getElementById('refreshPreferences');
+  if (refreshPreferencesBtn) {
+    refreshPreferencesBtn.addEventListener('click', () => {
+      loadUserPreferences();
+    });
+  }
+}
+
+/**
  * 初始化管理员页面
  */
 function initAdminPage() {
@@ -440,7 +574,9 @@ function initAdminPage() {
   initAdminLogout();
   loadUsers();
   bindLogEvents();
+  bindPreferenceEvents();
   loadLogs(); // 加载日志
+  loadUserPreferences(); // 加载用户偏好信息
 }
 
 // 页面加载完成后初始化

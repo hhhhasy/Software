@@ -7,18 +7,21 @@ import time
 import logging
 import tempfile
 import re
+import json
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 
 # 导入本地模块
 from models import (
-    User, UserMemory, get_db,
+    User, UserMemory, UserPreference, get_db,
     UserLogin, UserRegister, LoginResponse, MessageResponse, 
     SpeechResponse, VideoResponse, GestureResponse, LogEntry,
-    LogResponse, AIResponse, ChatRequest, UserUpdate, UserResponse
+    LogResponse, AIResponse, ChatRequest, UserUpdate, UserResponse,
+    UserPreferenceResponse
 )
 import services
 
@@ -400,6 +403,102 @@ async def get_logs(limit: int = Body(100, ge=1, le=1000), level: Optional[str] =
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"无法读取日志: {str(e)}"
+        )
+
+@app.get("/api/user-preferences/{user_id}", response_model=UserPreferenceResponse)
+async def get_user_preference(user_id: int, db: Session = Depends(get_db)):
+    """获取用户偏好信息API"""
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 获取用户偏好信息
+        preference = db.query(UserPreference).filter(UserPreference.user_id == user_id).first()
+        
+        # 如果用户没有偏好信息，返回空数据
+        if not preference:
+            return {
+                "user_id": user_id,
+                "username": user.username,
+                "common_commands": {},
+                "interaction_habits": {},
+                "command_aliases": {},
+                "updated_at": None
+            }
+        
+        # 解析JSON字符串为Python字典
+        common_commands = json.loads(preference.common_commands or "{}")
+        interaction_habits = json.loads(preference.interaction_habits or "{}")
+        command_aliases = json.loads(preference.command_aliases or "{}")
+        
+        logger.info(f"返回用户ID: {user_id} 的偏好信息")
+        return {
+            "user_id": user_id,
+            "username": user.username,
+            "common_commands": common_commands,
+            "interaction_habits": interaction_habits,
+            "command_aliases": command_aliases,
+            "updated_at": preference.updated_at
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取用户偏好信息失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取用户偏好信息时发生错误"
+        )
+
+@app.get("/api/user-preferences")
+async def get_all_user_preferences(db: Session = Depends(get_db)):
+    """获取所有用户的偏好信息API"""
+    try:
+        # 获取所有用户
+        users = db.query(User).all()
+        
+        # 获取所有用户的偏好信息
+        result = []
+        for user in users:
+            preference = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
+            
+            # 如果用户没有偏好信息，添加空数据
+            if not preference:
+                result.append({
+                    "user_id": user.id,
+                    "username": user.username,
+                    "common_commands": {},
+                    "interaction_habits": {},
+                    "command_aliases": {},
+                    "updated_at": None
+                })
+                continue
+            
+            # 解析JSON字符串为Python字典
+            common_commands = json.loads(preference.common_commands or "{}")
+            interaction_habits = json.loads(preference.interaction_habits or "{}")
+            command_aliases = json.loads(preference.command_aliases or "{}")
+            
+            result.append({
+                "user_id": user.id,
+                "username": user.username,
+                "common_commands": common_commands,
+                "interaction_habits": interaction_habits,
+                "command_aliases": command_aliases,
+                "updated_at": preference.updated_at
+            })
+        
+        logger.info(f"返回 {len(result)} 个用户的偏好信息")
+        return result
+    except Exception as e:
+        logger.error(f"获取所有用户偏好信息失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取所有用户偏好信息时发生错误"
         )
 
 # ============= 应用启动 =============

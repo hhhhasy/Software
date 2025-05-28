@@ -10,7 +10,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import QueuePool
 from datetime import datetime, timezone
 from dotenv import load_dotenv
-from sqlalchemy import Text # 用于存储JSON等复杂数据
+from sqlalchemy import Text, Boolean # 用于存储JSON等复杂数据
 
 # 加载环境变量
 load_dotenv()
@@ -234,8 +234,12 @@ class UserPreferenceData(BaseModel):
     interaction_habits: Optional[InteractionHabits] = None
     command_aliases: Optional[List[CommandAliasEntry]] = None
 
-class UserPreferenceResponse(UserPreferenceData):
+class UserPreferenceResponse(BaseModel):
     user_id: int
-    updated_at: datetime
+    username: str
+    common_commands: Dict[str, int] = Field(default_factory=dict)  # 常用指令及其频率
+    interaction_habits: Dict[str, Any] = Field(default_factory=dict)  # 交互习惯
+    command_aliases: Dict[str, str] = Field(default_factory=dict)  # 指令别名
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

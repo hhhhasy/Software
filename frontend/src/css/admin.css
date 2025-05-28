@@ -208,6 +208,82 @@
   border-radius: 8px;
 }
 
+/* 用户偏好信息容器 */
+.preferences-container {
+  padding: 1.5rem;
+  max-height: 500px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.preference-card {
+  background: rgba(15, 22, 45, 0.7);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(123, 97, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.preference-card:hover {
+  box-shadow: 0 0 15px rgba(0, 247, 255, 0.1);
+  border-color: rgba(0, 247, 255, 0.3);
+}
+
+.preference-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(123, 97, 255, 0.2);
+}
+
+.preference-username {
+  font-size: 1.2rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.preference-section {
+  margin-bottom: 1rem;
+}
+
+.preference-section-title {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+}
+
+.preference-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.preference-item:last-child {
+  border-bottom: none;
+}
+
+.preference-key {
+  color: var(--secondary);
+}
+
+.preference-value {
+  color: white;
+  font-weight: 500;
+}
+
+.preference-empty {
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 1rem;
+  font-style: italic;
+}
+
 /* 加载中和空日志的样式 */
 .loading, .empty-logs, .error-message {
   padding: 2rem;

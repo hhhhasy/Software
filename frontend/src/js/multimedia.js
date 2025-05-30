@@ -185,18 +185,27 @@ async function processGesture() {
     if (data.gesture) {
       let gestureMessage = '未知手势';
       switch (data.gesture) {
-        case 'fist':
+        case 'Closed_Fist':
           document.getElementById('audioTrack')?.pause();
           gestureMessage = '检测到拳头，音乐已暂停！';
           break;
-        case 'OK':
-          gestureMessage = '检测到OK手势！';
+        case 'Victory':
+          gestureMessage = '检测到胜利手势！';
           break;
-        case 'thumbs_up':
+        case 'Thumb_Up':
           gestureMessage = '检测到竖起大拇指！';
           break; 
-        case 'palm':
+        case 'Open_Palm':
           gestureMessage = '检测到张开手掌！';
+          break;
+        case 'Pointing_Up':
+          gestureMessage = '检测到指向上方！';
+          break;
+        case 'Thumb_Down':
+          gestureMessage = '检测到反对手势！';
+          break;
+        case 'ILoveYou':
+          gestureMessage = '检测到爱你手势！';
           break;
       }
       showSuccess(gestureMessage);

@@ -246,20 +246,34 @@ def get_command_response(text: str) -> Optional[str]:
     
     return None
 
-# ========== 持续警报功能 ==========
+# ========== 持续警报功能（支持警报升级） ==========
 async def continuous_warning():
-    """持续发出警告音频，直到警报被解除"""
+    """持续发出警告音频，达到一定次数后升级警报内容"""
     global alert_active
     num = 0
-    while alert_active and num < 50:
+    upgrade_threshold = 5  # 每播报 5 次后升级一次警报
+    max_repeats = 50       # 最大播报次数限制
+
+    while alert_active and num < max_repeats:
         num += 1
+
+        # 判断当前应该使用哪种警报内容
+        if num <= upgrade_threshold:
+            message = "注意力偏离，请集中注意力！如需解除警报，请说'解除警报' 或者 做 '胜利' 手势。"
+        elif num <= upgrade_threshold * 2:
+            message = "警告！您仍未集中注意力！如需解除，请立即作出回应！"
+        else:
+            message = "严重警告！请立即集中注意力，否则系统将记录此行为！"
+
         try:
-            tts_engine.say("注意力偏离，请集中注意力！如需解除警报，请说'解除警报' 或者 做 'OK' 手势。")
+            tts_engine.say(message)
             tts_engine.runAndWait()
         except Exception as e:
             logger.warning(f"持续警报播报失败: {str(e)}")
             break
+
         await asyncio.sleep(2)
+
 
 # ========== 视频处理服务 ==========
 # 模型路径
@@ -382,6 +396,7 @@ async def process_video():
 
         # 状态变量
         eye_closed_start = None
+        gaze_off_start_time = None  # 注意力偏离起始时间
         yawn_frames = 0
         warnings = []
         start_time = time.time()
@@ -435,14 +450,22 @@ async def process_video():
                     }
                     gaze_vector = models["gaze_det"](gaze_input)[models["gaze_det"].output(0)][0]
 
-                    # 判断是否注视前方（阈值可调）
+                    # 偏离判断（阈值可调）
                     if abs(gaze_vector[0]) > 0.4 or abs(gaze_vector[1]) > 0.4:
-                        warning = "注意力偏离前方，请集中注意力！"
-                        if not alert_active:
-                            alert_active = True
-                            if alert_task is None or alert_task.done():
-                                alert_task = asyncio.create_task(continuous_warning())
-                        return {"message": warning, "alert": True}
+                        # 如果是刚开始偏离，记录时间
+                        if gaze_off_start_time is None:
+                            gaze_off_start_time = time.time()
+                        elif time.time() - gaze_off_start_time > 1:  # 持续偏离超过1秒
+                            warning = "注意力偏离前方，请集中注意力！"
+                            if not alert_active:
+                                alert_active = True
+                                if alert_task is None or alert_task.done():
+                                    alert_task = asyncio.create_task(continuous_warning())
+                            return {"message": warning, "alert": True}
+                    else:
+                        # 注意力恢复，重置状态
+                        gaze_off_start_time = None
+                        alert_active = False
 
                     # 画框显示
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
@@ -587,112 +610,88 @@ async def process_video():
         cv2.destroyAllWindows()
 
 # ========== 手势识别服务 ==========
-async def process_gesture(user_id: int):
+import os
+import time
+import cv2
+from fastapi import HTTPException, status
+from typing import Dict
+from collections import deque, Counter
+from pathlib import Path
+import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import BaseOptions
+from mediapipe.tasks.python.vision import (
+    GestureRecognizer,
+    GestureRecognizerOptions,
+    GestureRecognizerResult
+)
+VisionRunningMode = mp.tasks.vision.RunningMode
+
+async def process_gesture(user_id: int) -> Dict[str, str]:
     """
-    手势识别处理
-    
-    参数:
-    - user_id: 用户ID
-    
-    返回:
-    - Dict[str, str]: 包含手势识别结果和响应文本
+    使用 MediaPipe GestureRecognizer V2 进行手势识别
     """
     global alert_active
-    mp_hands = None
-    hands = None
     cap = None
     resp_text = ""
-    
+    recognized_label = None
+    display_start = None
+
     try:
-        GESTURES = ['fist', 'palm', 'thumbs_up', 'OK']
         logger.info("启动手势识别")
-        
-        # 加载手势识别模型
-        model_path = os.path.join(MODEL_DIR, 'gesture_model.pkl')
-        
-        try:
-            clf = joblib.load(model_path)
-        except FileNotFoundError:
-            logger.error("手势识别模型不存在")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="手势识别模型不存在，请先训练模型"
-            )
 
-        # 初始化MediaPipe手部检测
-        mp_hands = mp.solutions.hands
-        hands = mp_hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.7
+        # 加载模型路径
+        model_path = Path(__file__).parent / "model" / "gesture_recognizer.task"
+        with open(model_path, "rb") as f:
+            model_buffer = f.read()
+        if not os.path.exists(model_path):
+            raise HTTPException(status_code=500, detail="未找到 gesture_recognizer.task 模型文件")
+
+        # 稳定性判断用滑动窗口
+        gesture_history = deque(maxlen=10)
+        stable_threshold = 6
+
+        # 回调函数定义
+        def gesture_callback(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
+            nonlocal recognized_label, display_start
+            if result.gestures:
+                gesture = result.gestures[0][0].category_name
+                gesture_history.append(gesture)
+                most_common, freq = Counter(gesture_history).most_common(1)[0]
+                if freq >= stable_threshold:
+                    recognized_label = most_common
+                    logger.info(f"稳定识别到手势: {recognized_label}")
+                    display_start = time.time()
+
+        # 创建识别器
+        options = GestureRecognizerOptions(
+            base_options=BaseOptions(model_asset_buffer=model_buffer),
+            running_mode=VisionRunningMode.LIVE_STREAM,
+            result_callback=gesture_callback,
+            num_hands=1
         )
-        mp_draw = mp.solutions.drawing_utils
+        recognizer = GestureRecognizer.create_from_options(options)
 
-        # 打开摄像头
+        # 摄像头初始化
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
-            logger.error("无法访问摄像头")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="无法访问摄像头"
-            )
+            raise HTTPException(status_code=500, detail="无法访问摄像头")
 
-        recognized_label = None
-        display_start = None
         start_time = time.time()
-        
-        # 新增稳定性检测相关变量
-        stable_threshold = 5  # 需要连续5帧相同手势
-        current_stable_count = 0
-        last_gesture = None
 
-        # 最多运行10秒或者识别到手势
         while (time.time() - start_time < 10) and recognized_label is None:
-            ret, img = cap.read()
+            ret, frame = cap.read()
             if not ret:
                 break
 
-            h, w = img.shape[:2]
-            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            results = hands.process(img_rgb)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+            timestamp = int(time.time() * 1000)
+            recognizer.recognize_async(mp_image, timestamp)
 
-            # 如果检测到手并且还未识别过手势
-            if results.multi_hand_landmarks:
-                lm = results.multi_hand_landmarks[0]
-                row = []
-                for p in lm.landmark:
-                    row += [p.x, p.y, p.z]
-                
-                # 预测手势
-                try:
-                    pred = clf.predict([row])[0]
-                    current_gesture = GESTURES[pred]
-
-                    # 稳定性检测逻辑
-                    if current_gesture == last_gesture:
-                        current_stable_count += 1
-                    else:
-                        current_stable_count = 1
-                        last_gesture = current_gesture
-
-                    # 达到稳定阈值后触发识别
-                    if current_stable_count >= stable_threshold:
-                        recognized_label = current_gesture
-                        logger.info(f"稳定识别到手势: {recognized_label}")
-                        display_start = time.time()
-                        mp_draw.draw_landmarks(img, lm, mp_hands.HAND_CONNECTIONS)
-                        # 重置检测状态
-                        current_stable_count = 0
-                        last_gesture = None
-                        
-                except Exception as e:
-                    logger.error(f"手势预测错误: {str(e)}")
-
-            # 如果已经识别到手势
-            if recognized_label is not None:
+            # 展示识别结果
+            if recognized_label:
                 cv2.putText(
-                    img,
+                    frame,
                     recognized_label,
                     (10, 60),
                     cv2.FONT_HERSHEY_SIMPLEX,
@@ -700,39 +699,43 @@ async def process_gesture(user_id: int):
                     (0, 255, 0),
                     3
                 )
-                # 根据手势决定反馈文本
-                gesture_resp_map = {
-                    'fist': "检测到拳，音乐已暂停",
-                    'thumbs_up': "收到确认",
-                    'palm': "检测到手展开",
-                    'OK': "检测到OK"
-                }
-                resp_text = gesture_resp_map.get(recognized_label, "")
-                log_multimodal(user_id, "gesture", recognized_label, resp_text)
 
-                if alert_active and recognized_label == 'OK':
-                    alert_active = False
-                    resp_text = '警报已解除'
-                    try:
-                        # 使用语音引擎进行语音输出
-                        tts_engine.say("警报已解除")
-                        tts_engine.runAndWait()
-                    except Exception as e:
-                        logger.warning(f"语音输出失败: {str(e)}")
-
-                # 显示1秒后退出
-                if time.time() - display_start > 1.0:
-                    break
-
-            cv2.imshow('Gesture Recognition', img)
-            # 按Esc提前退出
+            cv2.imshow("Gesture Recognition", frame)
             if cv2.waitKey(1) & 0xFF == 27:
                 break
+
+            if display_start and (time.time() - display_start > 1.0):
+                break
+
+        # 响应文本映射
+        gesture_resp_map = {
+            'Closed_Fist': "检测到拳头，音乐已暂停",
+            'Thumb_Up': "收到确认",
+            'Open_Palm': "检测到手掌张开",
+            'Victory': "检测到胜利手势，警报已解除",
+            'Pointing_Up': "检测到指向上方手势",
+            'Thumb_Down': "检测到反对手势",
+            'ILoveYou': "检测到爱你手势"
+        }
+
+        resp_text = gesture_resp_map.get(recognized_label, "")
+        if recognized_label:
+            log_multimodal(user_id, "gesture", recognized_label, resp_text)
+
+            if alert_active and recognized_label == "Victory":
+                alert_active = False
+                resp_text = "警报已解除"
+                try:
+                    tts_engine.say("警报已解除")
+                    tts_engine.runAndWait()
+                except Exception as e:
+                    logger.warning(f"语音输出失败: {str(e)}")
 
         return {
             'gesture': recognized_label,
             'resp_text': resp_text
         }
+
     except Exception as e:
         logger.error(f"手势识别错误: {str(e)}")
         raise HTTPException(
@@ -740,11 +743,19 @@ async def process_gesture(user_id: int):
             detail=f"手势识别错误: {str(e)}"
         )
     finally:
-        # 确保资源释放
         if cap is not None:
             cap.release()
         cv2.destroyAllWindows()
 
+def extract_relative_features(lm):
+    """
+    以 wrist (0号关键点) 为基准，提取相对位置坐标
+    """
+    base_x, base_y, base_z = lm.landmark[0].x, lm.landmark[0].y, lm.landmark[0].z
+    relative = []
+    for p in lm.landmark:
+        relative.extend([p.x - base_x, p.y - base_y, p.z - base_z])
+    return relative
 
 async def update_common_commands(user_id: int, command_text: str, db: Session):
     try:

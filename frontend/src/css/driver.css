@@ -1324,3 +1324,284 @@ input:checked + .toggle-slider:before {
 #flash-overlay-container.active .flash-edge {
   opacity: 0.7; /* 闪烁时的不透明度，可以调整 */
 }
+
+
+/* =========================================== */
+/* ============ 亮色主题样式 (增量) ========== */
+/* =========================================== */
+
+body.theme-light {
+  /* -- 基本颜色变量覆盖 -- */
+  --dark: #e9ecef; /* 亮色主题下的“暗色”背景，用于一些次要区域 */
+  --text-primary: #212529; /* 主要文字颜色 (深灰) */
+  --text-secondary: #6c757d; /* 次要文字颜色 (中灰) */
+  --text-muted: #adb5bd;    /* 更浅的文字颜色 */
+  --border-light: #dee2e6; /* 边框颜色 */
+  --card-bg: #ffffff;      /* 卡片背景 (白色) */
+  --primary-light: rgba(0, 188, 212, 0.1); /* 主题浅色可以稍微调整以适应亮背景 */
+  
+  /* -- 阴影变量覆盖 (亮色主题阴影通常更柔和) -- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 5px 15px rgba(0, 0, 0, 0.12);
+
+  background: #f4f7f9; /* 页面主背景 */
+  color: var(--text-primary);
+}
+
+/* -- 滚动条在亮色主题下的样式 -- */
+body.theme-light ::-webkit-scrollbar-track {
+  background: #e9ecef; /* 浅色轨道 */
+}
+body.theme-light ::-webkit-scrollbar-thumb {
+  background: #b0bec5; /* 稍暗的滑块 */
+}
+body.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: #90a4ae;
+}
+
+
+/* -- 特定组件在亮色主题下的样式调整 -- */
+
+/* 顶部导航栏 */
+body.theme-light .dashboard-header {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-light);
+}
+/* 品牌文字/图标颜色在亮色下可能不需要改变，因为它们是渐变文字 */
+/* body.theme-light .brand i,
+body.theme-light .brand h1 { ... } */
+body.theme-light .system-time {
+  color: var(--text-primary);
+}
+body.theme-light .weather-widget {
+  background: rgba(0, 188, 212, 0.08); /* 更浅的背景 */
+  border: 1px solid rgba(0, 188, 212, 0.2);
+}
+body.theme-light #logout {
+  background: rgba(244, 67, 54, 0.1); /* 退出按钮背景 */
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+body.theme-light #logout:hover {
+  background: var(--danger);
+  color: white; /* 悬停时文字变白 */
+}
+
+/* 侧边导航 */
+body.theme-light .dashboard-sidebar {
+  background: rgba(248, 249, 250, 0.85);
+  border-right: 1px solid var(--border-light);
+}
+body.theme-light .nav-item {
+  color: var(--text-secondary);
+}
+body.theme-light .nav-item::before { /* 悬停时的扫光效果在亮色下可能不明显或不需要 */
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+}
+body.theme-light .nav-item:hover {
+  background: rgba(0, 188, 212, 0.08);
+  color: var(--primary);
+}
+body.theme-light .nav-item.active {
+  background: linear-gradient(90deg, rgba(0, 188, 212, 0.1), transparent);
+  color: var(--primary);
+  border-left-color: var(--primary);
+}
+
+/* 内容区域和面板 */
+body.theme-light .panel-title {
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+body.theme-light .status-badge.online {
+  background: rgba(76, 175, 80, 0.1); /* 状态徽章背景 */
+  color: var(--success);
+}
+body.theme-light .status-badge i { /* 确保图标颜色也一致 */
+  color: var(--success);
+}
+
+
+/* 卡片 */
+body.theme-light .card {
+  background: var(--card-bg); /* 白色 */
+  border: 1px solid var(--border-light);
+}
+body.theme-light .card:hover {
+  border-color: #ced4da; /* 悬停时边框颜色 */
+}
+body.theme-light .card-title {
+  color: var(--text-primary);
+}
+
+/* 统计卡片 */
+body.theme-light .stat-card {
+  background: #f8f9fa; /* 浅灰色背景 */
+  border: 1px solid #e9ecef;
+}
+body.theme-light .stat-card.highlight {
+  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(63, 81, 181, 0.1));
+  border: 1px solid rgba(0, 188, 212, 0.2);
+}
+body.theme-light .stat-icon {
+  background: rgba(0, 188, 212, 0.1); /* 图标背景 */
+}
+/* .stat-label, .stat-unit 等文字颜色会继承 body.theme-light 的 --text-secondary, --primary */
+
+/* 进度环和进度条 */
+body.theme-light .progress-ring-bg {
+  stroke: #e9ecef; /* 进度环背景 */
+}
+body.theme-light .progress-bar {
+  background: #e9ecef; /* 进度条背景 */
+}
+/* .progress-fill 和 .progress-ring-circle 的颜色通常是主题色，可能不需要改 */
+
+/* 系统状态栏 */
+body.theme-light .system-status-bar {
+  background: rgba(248, 249, 250, 0.9);
+  border-top: 1px solid var(--border-light);
+}
+/* .status-item 文字和图标颜色会继承 */
+
+
+/* 交互组件 - 语音控制 */
+body.theme-light .voice-wave {
+  /* voice-wave 的颜色已经是 var(--primary)，通常不需要改 */
+}
+body.theme-light .voice-btn {
+  /* voice-btn 的渐变背景是主题色，可能不需要改，但可以考虑悬停效果 */
+}
+body.theme-light .voice-btn:hover {
+  box-shadow: 0 0 15px rgba(0, 188, 212, 0.2); /* 调整阴影颜色 */
+}
+body.theme-light .voice-btn.recording {
+  /* recording 状态的按钮颜色可能需要调整以在亮色背景下更突出 */
+   box-shadow: 0 0 20px rgba(244, 67, 54, 0.3);
+}
+body.theme-light .voice-output {
+  background: #f8f9fa; /* 语音输出背景 */
+  border: 1px solid var(--border-light);
+}
+body.theme-light .output-label {
+  color: var(--text-secondary);
+}
+body.theme-light .command-chip {
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.2);
+  color: var(--primary); /* 让文字颜色也使用主题色，更清晰 */
+}
+body.theme-light .command-chip:hover {
+  background: rgba(0, 188, 212, 0.15);
+}
+
+/* 音乐播放器 */
+body.theme-light .music-player-card {
+  background: linear-gradient(135deg, #f0f4f8, #e6eaf0); /* 浅色渐变 */
+}
+body.theme-light .album-cover {
+  background: linear-gradient(45deg, rgba(0,188,212,0.1), var(--secondary)); /* 专辑封面背景 */
+}
+body.theme-light .song-title {
+  color: var(--text-primary);
+}
+body.theme-light .song-artist,
+body.theme-light .song-album,
+body.theme-light .time-current,
+body.theme-light .time-total {
+  color: var(--text-secondary);
+}
+body.theme-light .control-btn {
+  background: rgba(0, 0, 0, 0.03); /* 控制按钮背景 */
+  border: 1px solid var(--border-light);
+}
+body.theme-light .control-btn i {
+  color: var(--text-primary); /* 按钮图标颜色 */
+}
+body.theme-light .control-btn:hover {
+  background: rgba(0, 188, 212, 0.1);
+}
+body.theme-light .song-item,
+body.theme-light .radio-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+body.theme-light .song-item:hover,
+body.theme-light .radio-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+body.theme-light .song-item.active {
+  background: rgba(0, 188, 212, 0.1);
+  border-left-color: var(--primary);
+}
+body.theme-light .radio-icon {
+  background: rgba(0, 188, 212, 0.1);
+}
+
+
+/* 设置项 */
+body.theme-light .setting-item {
+  border-bottom: 1px solid var(--border-light);
+}
+body.theme-light .setting-select {
+  background: #f8f9fa; /* 下拉选择背景 */
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+body.theme-light .setting-slider {
+  background: #e9ecef; /* 滑块轨道背景 */
+}
+body.theme-light .setting-slider::-webkit-slider-thumb {
+  /* 滑块按钮颜色已经是 var(--primary)，通常不用改 */
+}
+body.theme-light .toggle-slider {
+  background-color: #ced4da; /* 开关关闭时的背景 */
+}
+body.theme-light .toggle-slider:before {
+  background-color: white; /* 开关按钮 */
+}
+body.theme-light input:checked + .toggle-slider {
+  background-color: var(--primary); /* 开关开启时的背景 */
+}
+
+/* 导航状态卡片 */
+body.theme-light .navigation-summary,
+body.theme-light .nav-item, /* 注意这里可能与侧边栏 .nav-item 冲突，检查选择器特异性 */
+body.theme-light .sensor-item,
+body.theme-light .gesture-item,
+body.theme-light .status-item, /* 车辆状态项 */
+body.theme-light .current-weather,
+body.theme-light .forecast-item,
+body.theme-light .road-status,
+body.theme-light .control-info {
+  background: rgba(0, 0, 0, 0.03); /* 为这些内部小卡片设置浅色背景 */
+  border: 1px solid var(--border-light); /* 如果它们之前没有边框的话 */
+}
+
+/* 确保导航卡片内的 .nav-item 不受侧边栏样式影响，如果需要的话 */
+body.theme-light .navigation-summary .nav-item {
+    background: rgba(0, 0, 0, 0.05); /* 或者一个更特定的背景 */
+    color: var(--text-secondary); /* 确保文字颜色正确 */
+}
+body.theme-light .navigation-summary .nav-item i {
+    color: var(--primary);
+}
+body.theme-light .navigation-summary .nav-item strong {
+    color: var(--text-primary);
+}
+
+
+/* 按钮样式 */
+body.theme-light .btn-primary {
+  /* 按钮的渐变背景是主题色，通常不需要改，但悬停阴影可以调整 */
+}
+body.theme-light .btn-primary:hover {
+  box-shadow: 0 3px 6px rgba(0, 188, 212, 0.2); /* 调整悬停阴影 */
+}
+
+/* 系统信息 */
+body.theme-light .info-item {
+  border-bottom: 1px solid var(--border-light);
+}

@@ -65,6 +65,64 @@ window.startAppScreenFlash = startScreenFlash;
 window.stopAppScreenFlash = stopScreenFlash;
 
 /**
+ * 初始化主题切换功能
+ */
+function initThemeSwitcher() {
+  const themeSelector = document.getElementById('themeSelector');
+  const bodyElement = document.body;
+  const THEME_STORAGE_KEY = 'neurodrive_theme'; // 本地存储的键名
+
+  // 应用已保存的主题或默认主题
+  function applyTheme(theme) {
+    bodyElement.classList.remove('theme-light', 'theme-dark', 'theme-auto'); // 清除旧的主题类
+    switch (theme) {
+      case 'light':
+        bodyElement.classList.add('theme-light');
+        break;
+      case 'dark':
+        bodyElement.classList.add('theme-dark'); // 可以明确添加一个 .theme-dark，即使它是默认的
+        break;
+      case 'auto':
+        bodyElement.classList.add('theme-auto');
+        // 自动模式逻辑 (可以基于系统偏好或时间)
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          bodyElement.classList.add('theme-light');
+        } else {
+          bodyElement.classList.add('theme-dark'); // 默认自动为暗色或根据系统
+        }
+        break;
+      default:
+        bodyElement.classList.add('theme-dark'); // 默认暗色
+    }
+    // 更新选择器的显示值
+    if (themeSelector) themeSelector.value = theme;
+    console.log(`Theme applied: ${theme}`);
+  }
+
+  // 加载保存的主题
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark'; // 默认暗色
+  applyTheme(savedTheme);
+
+  if (themeSelector) {
+    themeSelector.addEventListener('change', (event) => {
+      const selectedTheme = event.target.value;
+      applyTheme(selectedTheme);
+      localStorage.setItem(THEME_STORAGE_KEY, selectedTheme); // 保存用户选择
+      showSuccess(`主题已切换为: ${themeSelector.options[themeSelector.selectedIndex].text}`);
+    });
+  }
+
+  // (可选) 监听系统颜色方案变化，用于 'auto' 模式
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+      if (localStorage.getItem(THEME_STORAGE_KEY) === 'auto') {
+        applyTheme('auto'); // 重新应用自动模式逻辑
+      }
+    });
+  }
+}
+
+/**
  * 初始化音乐播放器
  */
 function initMusicPlayer() {
@@ -545,6 +603,8 @@ function initDriverPage() {
   initFuelGauge();
   initSystemTime();
   initWeatherAnimation();
+
+  initThemeSwitcher(); // 添加主题切换初始化
   
   // 只在桌面端启用卡片悬浮特效
   if (window.innerWidth > 768) {

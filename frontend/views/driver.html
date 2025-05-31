@@ -528,34 +528,33 @@
                     </div>
                     
                     <div class="card">
-                        <h3 class="card-title">
-                            <i class="fas fa-volume-up"></i> 声音设置
-                        </h3>
+                        <h3 class="card-title"><i class="fas fa-volume-up"></i> 声音设置</h3>
                         <div class="settings-group">
                             <div class="setting-item">
                                 <div class="setting-label">媒体音量</div>
                                 <div class="setting-control">
-                                    <input type="range" min="0" max="100" value="70" class="setting-slider">
+                                    <input type="range" min="0" max="100" value="70" class="setting-slider" id="mediaVolumeSlider">
+                                    <span id="mediaVolumeValue" style="margin-left: 10px;">70%</span>
                                 </div>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-label">导航音量</div>
                                 <div class="setting-control">
-                                    <input type="range" min="0" max="100" value="85" class="setting-slider">
+                                    <input type="range" min="0" max="100" value="85" class="setting-slider" id="navVolumeSlider">
+                                    <span id="navVolumeValue" style="margin-left: 10px;">85%</span>
                                 </div>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-label">系统提示音</div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" checked id="systemSoundsToggle">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 
                 <div class="dashboard-row">
                     <div class="card">

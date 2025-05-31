@@ -166,6 +166,93 @@ function initBrightnessControl() {
 }
 
 /**
+ * 初始化音量控制功能
+ */
+function initVolumeControls() {
+  const mediaVolumeSlider = document.getElementById('mediaVolumeSlider');
+  const mediaVolumeValue = document.getElementById('mediaVolumeValue');
+  const mainAudioPlayer = document.getElementById('audioTrack'); // 已有的音乐播放器 <audio>
+
+  const navVolumeSlider = document.getElementById('navVolumeSlider');
+  const navVolumeValue = document.getElementById('navVolumeValue');
+
+  const systemSoundsToggle = document.getElementById('systemSoundsToggle');
+
+  const VOLUME_STORAGE_PREFIX = 'neurodrive_volume_';
+
+  // 设置和应用媒体音量
+  function applyMediaVolume(level) { // level 0-100
+    const volumeFloat = level / 100; // <audio> 元素的 volume 是 0.0 - 1.0
+    if (mainAudioPlayer) {
+      mainAudioPlayer.volume = volumeFloat;
+    }
+    mediaVolumeSlider.value = level;
+    mediaVolumeValue.textContent = `${level}%`;
+    console.log(`Media volume set to: ${volumeFloat}`);
+  }
+
+  // 设置和应用导航音量 (概念性 - 需要实际的导航声音控制机制)
+  function applyNavVolume(level) {
+    const volumeFloat = level / 100;
+    navVolumeSlider.value = level;
+    navVolumeValue.textContent = `${level}%`;
+    console.log(`Navigation volume (conceptual) set to: ${volumeFloat}`);
+    // TODO: 调用实际的导航音量控制API或方法
+  }
+
+  // 设置和应用系统提示音开关 (概念性)
+  function applySystemSoundsToggle(isOn) {
+    systemSoundsToggle.checked = isOn;
+    console.log(`System sounds toggled: ${isOn ? 'ON' : 'OFF'}`);
+    // TODO: 设置一个全局变量或调用方法来实际控制提示音的播放
+    // window.playSystemSounds = isOn;
+  }
+
+
+  // --- 媒体音量 ---
+  const savedMediaVolume = localStorage.getItem(VOLUME_STORAGE_PREFIX + 'media');
+  const initialMediaVolume = savedMediaVolume !== null ? parseInt(savedMediaVolume, 10) : parseInt(mediaVolumeSlider.value, 10);
+  applyMediaVolume(initialMediaVolume);
+
+  mediaVolumeSlider.addEventListener('input', (event) => {
+    applyMediaVolume(parseInt(event.target.value, 10));
+  });
+  mediaVolumeSlider.addEventListener('change', (event) => {
+    localStorage.setItem(VOLUME_STORAGE_PREFIX + 'media', event.target.value);
+    showSuccess(`媒体音量已调整为: ${event.target.value}%`);
+  });
+
+  // --- 导航音量 (概念性 需要根据实际调整) ---
+  const savedNavVolume = localStorage.getItem(VOLUME_STORAGE_PREFIX + 'navigation');
+  const initialNavVolume = savedNavVolume !== null ? parseInt(savedNavVolume, 10) : parseInt(navVolumeSlider.value, 10);
+  applyNavVolume(initialNavVolume);
+
+  navVolumeSlider.addEventListener('input', (event) => {
+    applyNavVolume(parseInt(event.target.value, 10));
+  });
+  navVolumeSlider.addEventListener('change', (event) => {
+    localStorage.setItem(VOLUME_STORAGE_PREFIX + 'navigation', event.target.value);
+    showSuccess(`导航音量已调整为: ${event.target.value}%`);
+    // 如果导航音量由后端控制，这里可能需要发送API请求
+  });
+
+  // --- 系统提示音开关 (概念性) ---
+  const savedSystemSounds = localStorage.getItem(VOLUME_STORAGE_PREFIX + 'system_sounds');
+  // 默认为 true (checked)
+  const initialSystemSoundsOn = savedSystemSounds !== null ? JSON.parse(savedSystemSounds) : systemSoundsToggle.checked;
+  applySystemSoundsToggle(initialSystemSoundsOn);
+  window.playSystemSounds = initialSystemSoundsOn; // 设置一个全局变量供其他地方使用
+
+  systemSoundsToggle.addEventListener('change', (event) => {
+    const isOn = event.target.checked;
+    applySystemSoundsToggle(isOn);
+    localStorage.setItem(VOLUME_STORAGE_PREFIX + 'system_sounds', JSON.stringify(isOn));
+    window.playSystemSounds = isOn;
+    showSuccess(`系统提示音已${isOn ? '开启' : '关闭'}`);
+  });
+}
+
+/**
  * 初始化音乐播放器
  */
 function initMusicPlayer() {
@@ -650,6 +737,8 @@ function initDriverPage() {
   initThemeSwitcher(); // 添加主题切换初始化
 
   initBrightnessControl(); // 添加亮度控制初始化
+
+  initVolumeControls(); // 添加音量控制初始化
   
   // 只在桌面端启用卡片悬浮特效
   if (window.innerWidth > 768) {

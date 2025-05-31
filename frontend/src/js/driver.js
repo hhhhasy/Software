@@ -122,6 +122,49 @@ function initThemeSwitcher() {
   }
 }
 
+
+/**
+ * 初始化亮度调节功能
+ */
+function initBrightnessControl() {
+  const brightnessSlider = document.getElementById('brightnessSlider');
+  const brightnessValueDisplay = document.getElementById('brightnessValue');
+  const brightnessOverlay = document.getElementById('brightness-overlay');
+  const BRIGHTNESS_STORAGE_KEY = 'neurodrive_brightness';
+
+  if (!brightnessSlider || !brightnessOverlay || !brightnessValueDisplay) return;
+
+  // 应用亮度
+  function applyBrightness(level) { // level 从 0 到 100
+    // level 100 = 最亮 (覆盖层透明 opacity 0)
+    // level 0 = 最暗 (覆盖层不透明 opacity 1, 颜色为黑色)
+    const overlayOpacity = 1 - (level / 100);
+    brightnessOverlay.style.backgroundColor = `rgba(0, 0, 0, ${overlayOpacity})`;
+    
+    // 更新滑块和显示值
+    brightnessSlider.value = level;
+    brightnessValueDisplay.textContent = `${level}%`;
+    console.log(`Brightness applied: ${level}% (Overlay opacity: ${overlayOpacity})`);
+  }
+
+  // 加载保存的亮度
+  const savedBrightness = localStorage.getItem(BRIGHTNESS_STORAGE_KEY);
+  // 如果有保存的值，则使用；否则使用滑块的默认值 (100)
+  const initialBrightness = savedBrightness !== null ? parseInt(savedBrightness, 10) : parseInt(brightnessSlider.value, 10);
+  applyBrightness(initialBrightness);
+
+  brightnessSlider.addEventListener('input', (event) => {
+    const newBrightness = parseInt(event.target.value, 10);
+    applyBrightness(newBrightness);
+  });
+
+  brightnessSlider.addEventListener('change', (event) => { // 'change' 事件在用户释放滑块后触发
+    const newBrightness = parseInt(event.target.value, 10);
+    localStorage.setItem(BRIGHTNESS_STORAGE_KEY, newBrightness.toString());
+    showSuccess(`亮度已调整为: ${newBrightness}%`);
+  });
+}
+
 /**
  * 初始化音乐播放器
  */
@@ -605,6 +648,8 @@ function initDriverPage() {
   initWeatherAnimation();
 
   initThemeSwitcher(); // 添加主题切换初始化
+
+  initBrightnessControl(); // 添加亮度控制初始化
   
   // 只在桌面端启用卡片悬浮特效
   if (window.innerWidth > 768) {

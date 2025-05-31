@@ -23,6 +23,7 @@ from fastapi import HTTPException, status
 from models import UserMemory
 from zhipu import call_zhipu_chat
 from models import UserPreference
+from mediapipe.tasks.python.vision import GestureRecognizerResult
 
 # 配置路径
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -633,37 +634,40 @@ async def process_gesture(user_id: int) -> Dict[str, str]:
     """
     global alert_active
     cap = None
-    resp_text = ""
     recognized_label = None
     display_start = None
+    resp_text = ""
 
     try:
         logger.info("启动手势识别")
 
-        # 加载模型路径
+        # 1. 加载模型文件
         model_path = Path(__file__).parent / "model" / "gesture_recognizer.task"
+        if not model_path.exists():
+            raise HTTPException(status_code=500, detail="未找到 gesture_recognizer.task 模型文件")
         with open(model_path, "rb") as f:
             model_buffer = f.read()
-        if not os.path.exists(model_path):
-            raise HTTPException(status_code=500, detail="未找到 gesture_recognizer.task 模型文件")
+        logger.info(f"找到模型文件：{model_path}")
 
-        # 稳定性判断用滑动窗口
-        gesture_history = deque(maxlen=10)
-        stable_threshold = 6
+        # 2. 滑动窗口配置（调试时先把阈值调低）
+        gesture_history = deque(maxlen=5)    # 临时5帧窗口
+        stable_threshold = 2                  # 临时2次一致就算稳定
 
-        # 回调函数定义
-        def gesture_callback(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
+        # 3. 回调函数
+        def gesture_callback(result, output_image: mp.Image, timestamp_ms: int):
             nonlocal recognized_label, display_start
             if result.gestures:
+                # result.gestures 是一个列表：[[分类1, 分类2...]]
                 gesture = result.gestures[0][0].category_name
                 gesture_history.append(gesture)
                 most_common, freq = Counter(gesture_history).most_common(1)[0]
-                if freq >= stable_threshold:
+                logger.debug(f"[回调] 最新一帧分类：{gesture}，滑动窗口统计：{most_common}({freq})")
+                if freq >= stable_threshold and recognized_label is None:
                     recognized_label = most_common
-                    logger.info(f"稳定识别到手势: {recognized_label}")
                     display_start = time.time()
+                    logger.info(f"稳定识别到手势: {recognized_label}")
 
-        # 创建识别器
+        # 4. 创建 GestureRecognizer
         options = GestureRecognizerOptions(
             base_options=BaseOptions(model_asset_buffer=model_buffer),
             running_mode=VisionRunningMode.LIVE_STREAM,
@@ -671,24 +675,36 @@ async def process_gesture(user_id: int) -> Dict[str, str]:
             num_hands=1
         )
         recognizer = GestureRecognizer.create_from_options(options)
+        logger.info(f"GestureRecognizer 创建成功：{recognizer}")
 
-        # 摄像头初始化
+        # 5. 打开摄像头
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             raise HTTPException(status_code=500, detail="无法访问摄像头")
+        logger.info("摄像头打开成功")
 
         start_time = time.time()
 
+        # 6. 主循环：最多循环10秒，或一旦成功识别就退出
         while (time.time() - start_time < 10) and recognized_label is None:
             ret, frame = cap.read()
             if not ret:
+                logger.warning("读取摄像头帧失败，退出循环")
                 break
 
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+            # ——关键点：BGR 转 RGB——
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
             timestamp = int(time.time() * 1000)
+
+            # 异步识别
             recognizer.recognize_async(mp_image, timestamp)
 
-            # 展示识别结果
+            # 给后台线程一个小停顿，让它更有机会把回调执行出来
+            # 如果你的帧率很低，也可以把下面这行注释掉
+            time.sleep(0.005)
+
+            # 如果已经稳定识别到，就把文字画在屏幕上
             if recognized_label:
                 cv2.putText(
                     frame,
@@ -702,12 +718,15 @@ async def process_gesture(user_id: int) -> Dict[str, str]:
 
             cv2.imshow("Gesture Recognition", frame)
             if cv2.waitKey(1) & 0xFF == 27:
+                logger.info("用户按下 ESC，退出识别")
                 break
 
+            # 如果识别到后显示时间超过1秒，也退出
             if display_start and (time.time() - display_start > 1.0):
+                logger.info("已显示结果超过1秒，退出循环")
                 break
 
-        # 响应文本映射
+        # 7. 识别结果映射
         gesture_resp_map = {
             'Closed_Fist': "检测到拳头，音乐已暂停",
             'Thumb_Up': "收到确认",
@@ -717,10 +736,12 @@ async def process_gesture(user_id: int) -> Dict[str, str]:
             'Thumb_Down': "检测到反对手势",
             'ILoveYou': "检测到爱你手势"
         }
-
         resp_text = gesture_resp_map.get(recognized_label, "")
+
+        # 如果识别到，写日志并处理警报逻辑
         if recognized_label:
             log_multimodal(user_id, "gesture", recognized_label, resp_text)
+            logger.info(f"user_id={user_id}，识别到手势 {recognized_label}，对应文字：{resp_text}")
 
             if alert_active and recognized_label == "Victory":
                 alert_active = False
@@ -730,6 +751,9 @@ async def process_gesture(user_id: int) -> Dict[str, str]:
                     tts_engine.runAndWait()
                 except Exception as e:
                     logger.warning(f"语音输出失败: {str(e)}")
+
+        else:
+            logger.warning("10秒内没有稳定识别到任何手势")
 
         return {
             'gesture': recognized_label,
@@ -746,6 +770,11 @@ async def process_gesture(user_id: int) -> Dict[str, str]:
         if cap is not None:
             cap.release()
         cv2.destroyAllWindows()
+        # 记得关闭 recognizer 以释放资源
+        try:
+            recognizer.close()
+        except:
+            pass
 
 def extract_relative_features(lm):
     """

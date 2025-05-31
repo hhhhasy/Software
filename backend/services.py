@@ -455,7 +455,7 @@ async def process_video():
                         # 如果是刚开始偏离，记录时间
                         if gaze_off_start_time is None:
                             gaze_off_start_time = time.time()
-                        elif time.time() - gaze_off_start_time > 1:  # 持续偏离超过1秒
+                        elif time.time() - gaze_off_start_time > 0.75:  # 持续偏离超过1秒
                             warning = "注意力偏离前方，请集中注意力！"
                             if not alert_active:
                                 alert_active = True

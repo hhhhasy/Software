@@ -154,7 +154,7 @@ async function processVideo() {
     if (data.alert) {
       showError(data.message + ' 警报已触发，请说“解除警报”');
       if (window.startAppScreenFlash) { // 检查函数是否存在
-        window.startAppScreenFlash(10000, 600, 'red'); // 闪烁10秒，每0.6秒闪一次，红色
+        window.startAppScreenFlash(0, 600, 'red'); // 一直闪烁，每0.6秒闪一次，红色
       }
       //toggleRecording(); // 自动激活语音识别
     } else {
@@ -191,9 +191,12 @@ async function processGesture() {
       throw errorData;
     }
     const data = await response.json();
-    // if (data.resp_text.trim().includes('警报已解除')) {
-    //   processVideo();
-    // }
+    if (data.resp_text.trim().includes('警报已解除')) {
+      // processVideo();
+      if (window.stopAppScreenFlash) {
+        window.stopAppScreenFlash();
+      }
+    }
     if (data.gesture) {
       let gestureMessage = '未知手势';
       switch (data.gesture) {

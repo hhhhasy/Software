@@ -92,6 +92,9 @@ async function toggleRecording() {
           showSuccess('语音识别成功: ' + text);
           handleVoiceCommand(text);
           if(text.trim().includes('警报已解除')) {
+            if (window.stopAppScreenFlash) {
+              window.stopAppScreenFlash();
+            }
             processVideo();
           }
         } catch (err) {
@@ -150,13 +153,22 @@ async function processVideo() {
 
     if (data.alert) {
       showError(data.message + ' 警报已触发，请说“解除警报”');
+      if (window.startAppScreenFlash) { // 检查函数是否存在
+        window.startAppScreenFlash(10000, 600, 'red'); // 闪烁10秒，每0.6秒闪一次，红色
+      }
       //toggleRecording(); // 自动激活语音识别
     } else {
       showSuccess(data.message || '视频处理请求已发送');
+      if (window.stopAppScreenFlash) { // 检查函数是否存在
+        window.stopAppScreenFlash(); // 如果警报解除或未触发警报，确保停止闪光
+      }
     }
   } catch (err) {
     showError('视频处理失败: ' + (err.detail || '服务器错误'));
     console.error('视频处理错误:', err);
+    if (window.stopAppScreenFlash) { // 出错时也尝试停止闪光
+      window.stopAppScreenFlash();
+    }
   } finally {
     hideLoading();
   }

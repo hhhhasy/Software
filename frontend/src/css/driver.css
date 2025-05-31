@@ -1283,3 +1283,44 @@ input:checked + .toggle-slider:before {
     min-width: 45%;
   }
 }
+
+/* 闪光灯效果样式 */
+#flash-overlay-container .flash-edge {
+  position: absolute;
+  background-color: red; /* 默认闪烁颜色 */
+  opacity: 0; /* 初始透明 */
+  transition: opacity 0.1s ease-in-out; /* 平滑的透明度过渡 */
+}
+
+#flash-overlay-container .flash-edge.top {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 10px; /* 边缘条的厚度 */
+}
+
+#flash-overlay-container .flash-edge.bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+}
+
+#flash-overlay-container .flash-edge.left {
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 100%;
+}
+
+#flash-overlay-container .flash-edge.right {
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+}
+
+/* 当闪烁激活时，通过 JavaScript 添加/移除 'active' 类来控制闪烁 */
+#flash-overlay-container.active .flash-edge {
+  opacity: 0.7; /* 闪烁时的不透明度，可以调整 */
+}

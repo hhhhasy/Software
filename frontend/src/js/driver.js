@@ -1,6 +1,69 @@
 import session from '../utils/session.js';
 import { showLoading, hideLoading, showError, showSuccess } from '../utils/uiUtils.js';
 
+
+// 新增：获取闪光灯相关的DOM元素
+const flashOverlayContainer = document.getElementById('flash-overlay-container');
+let flashIntervalId = null;
+let isFlashing = false;
+
+/**
+ * 启动屏幕边缘闪光效果
+ * @param {number} duration - 闪光效果持续的总时间 (毫秒)。如果为0或负数，则一直闪烁直到手动停止。
+ * @param {number} interval - 一个完整闪烁周期的时长 (毫秒)，例如 500ms 表示亮0.25s灭0.25s。
+ * @param {string} color - 闪光的颜色 (可选, 默认 'red')。
+ */
+function startScreenFlash(duration = 5000, interval = 500, color = 'red') {
+  if (isFlashing || !flashOverlayContainer) return; // 如果已经在闪烁或元素不存在，则不重复启动
+
+  console.log(`Starting screen flash. Duration: ${duration}ms, Interval: ${interval}ms, Color: ${color}`);
+  isFlashing = true;
+
+  // 设置闪光颜色
+  const edges = flashOverlayContainer.querySelectorAll('.flash-edge');
+  edges.forEach(edge => edge.style.backgroundColor = color);
+
+  flashOverlayContainer.style.display = 'block'; // 显示闪光灯容器
+
+  let flashStateOn = false; // 控制当前是亮还是灭
+  // interval 是一个完整周期（亮+灭），所以切换状态的间隔是 interval / 2
+  flashIntervalId = setInterval(() => {
+    flashStateOn = !flashStateOn;
+    if (flashStateOn) {
+      flashOverlayContainer.classList.add('active');
+    } else {
+      flashOverlayContainer.classList.remove('active');
+    }
+  }, interval / 2);
+
+  // 如果设置了持续时间，则在时间到后停止
+  if (duration > 0) {
+    setTimeout(() => {
+      stopScreenFlash();
+    }, duration);
+  }
+}
+
+/**
+ * 停止屏幕边缘闪光效果
+ */
+function stopScreenFlash() {
+  if (!isFlashing || !flashOverlayContainer) return;
+  console.log("Stopping screen flash.");
+
+  if (flashIntervalId) {
+    clearInterval(flashIntervalId);
+    flashIntervalId = null;
+  }
+  flashOverlayContainer.classList.remove('active'); // 确保最后是熄灭状态
+  flashOverlayContainer.style.display = 'none';    // 隐藏容器
+  isFlashing = false;
+}
+
+  // 挂载到 window 对象，以便 multimedia.js 可以调用
+window.startAppScreenFlash = startScreenFlash;
+window.stopAppScreenFlash = stopScreenFlash;
+
 /**
  * 初始化音乐播放器
  */

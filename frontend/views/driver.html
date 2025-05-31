@@ -637,6 +637,15 @@
         </div>
     </div>
 
+        <!-- 闪光灯效果的容器 (初始隐藏) -->
+    <div id="flash-overlay-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">
+        <div class="flash-edge top"></div>
+        <div class="flash-edge bottom"></div>
+        <div class="flash-edge left"></div>
+        <div class="flash-edge right"></div>
+    </div>
+    
+    
     <!-- 引入JS文件 -->
     <script type="module" src="../src/js/auth-check.js"></script>
     <script type="module" src="../src/js/driver.js"></script>

@@ -253,6 +253,56 @@ function initVolumeControls() {
 }
 
 /**
+ * 初始化智能交互区域的事件监听 (文本输入和常用指令)
+ */
+function initSmartInteractionInputEvents() {
+  const commandTextInput = document.getElementById('commandTextInput');
+  const sendCommandBtn = document.getElementById('sendCommandBtn');
+  const commonCommandChipsContainer = document.getElementById('commonCommandChips');
+
+  if (!commandTextInput || !sendCommandBtn || !commonCommandChipsContainer) {
+    console.warn("智能交互输入区域的必要元素未找到!");
+    return;
+  }
+
+  // 事件：点击发送按钮
+  sendCommandBtn.addEventListener('click', () => {
+    if (window.processDriverTextInput) { // 检查 multimedia.js 中的函数是否存在
+      window.processDriverTextInput(commandTextInput.value);
+    } else {
+      showError("文本指令处理功能未初始化。");
+    }
+  });
+
+  // 事件：在文本输入框中按 Enter 键
+  commandTextInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (window.processDriverTextInput) {
+        window.processDriverTextInput(commandTextInput.value);
+      } else {
+        showError("文本指令处理功能未初始化。");
+      }
+    }
+  });
+
+  // 事件：点击常用指令
+  commonCommandChipsContainer.addEventListener('click', (event) => {
+    const targetChip = event.target.closest('.command-chip');
+    if (targetChip) {
+      const command = targetChip.dataset.command;
+      if (command) {
+        commandTextInput.value = command;
+        commandTextInput.focus();
+        showSuccess(`指令 "${command}" 已填充`);
+      }
+    }
+  });
+
+  // 注意：语音按钮(#voiceBtn)的事件监听仍然在 multimedia.js 的 initMultimedia 中处理
+}
+
+/**
  * 初始化音乐播放器
  */
 function initMusicPlayer() {
@@ -739,6 +789,8 @@ function initDriverPage() {
   initBrightnessControl(); // 添加亮度控制初始化
 
   initVolumeControls(); // 添加音量控制初始化
+
+  initSmartInteractionInputEvents(); // 初始化文本输入相关的事件
   
   // 只在桌面端启用卡片悬浮特效
   if (window.innerWidth > 768) {

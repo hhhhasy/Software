@@ -801,3 +801,155 @@ async def update_common_commands(user_id: int, command_text: str, db: Session):
     except Exception as e:
         db.rollback()
         logger.error(f"更新用户 {user_id} 常用指令失败: {e}")
+
+# 用于记录确认模态的函数， "text_input" 也是有效模态
+VALID_CONFIRMATION_MODALITIES = ["voice", "gesture", "visual_nod", "text_input"]
+async def record_confirmation_modality(user_id: int, modality: str, db: Session):
+    if modality not in VALID_CONFIRMATION_MODALITIES:
+        logger.warning(f"无效的确认模态: {modality} for user {user_id}")
+        return
+    try:
+        preference = db.query(UserPreference).filter(UserPreference.user_id == user_id).first()
+        if not preference:
+            preference = UserPreference(user_id=user_id, interaction_habits="{}")
+            db.add(preference)
+
+        habits_dict = {}
+        if preference.interaction_habits:
+            try:
+                habits_dict = json.loads(preference.interaction_habits)
+            except json.JSONDecodeError:
+                habits_dict = {}
+
+        if "confirmation_modalities" not in habits_dict or not isinstance(habits_dict.get("confirmation_modalities"), dict):
+            habits_dict["confirmation_modalities"] = {m: 0 for m in VALID_CONFIRMATION_MODALITIES}
+        
+        current_counts = habits_dict["confirmation_modalities"]
+        current_counts[modality] = current_counts.get(modality, 0) + 1
+        
+        preference.interaction_habits = json.dumps(habits_dict, ensure_ascii=False)
+        db.commit()
+        logger.info(f"用户 {user_id} 确认模态 '{modality}' 已记录。当前计数: {current_counts}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"记录用户 {user_id} 确认模态 '{modality}' 失败: {e}")
+
+
+async def _apply_command_aliases(user_id: int, text: str, db: Session) -> str:
+    """(辅助函数) 应用用户定义的指令别名"""
+    try:
+        preference = db.query(UserPreference).filter(UserPreference.user_id == user_id).first()
+        if preference and preference.command_aliases:
+            aliases_dict = json.loads(preference.command_aliases or "{}")
+            if text in aliases_dict:
+                original_command = aliases_dict[text]
+                logger.info(f"用户 {user_id} 指令别名 '{text}' 转换为 '{original_command}'")
+                return original_command
+    except Exception as e:
+        logger.error(f"应用用户 {user_id} 指令别名失败: {e}")
+    return text
+
+async def _process_recognized_text(
+    recognized_text: str,
+    user_id: int,
+    db: Session,
+    input_modality: str = "unknown" # "speech", "text_input"
+) -> Dict[str, Any]: # 返回值包含 'command', 'text', 'alert'
+    """
+    核心逻辑：处理已识别的文本（来自语音或直接文本输入）。
+    """
+    global alert_active
+    
+    # 1. 应用别名
+    processed_text = await _apply_command_aliases(user_id, recognized_text, db)
+
+    current_alert_status = alert_active # 先保存当前状态，用于响应
+
+    # 2. 解除警报关键词处理
+    if alert_active:
+        if "解除警报" in processed_text or "取消警报" in processed_text:
+            alert_active = False
+            current_alert_status = False # 更新响应中的状态
+            try:
+                tts_engine.say("警报已解除")
+                tts_engine.runAndWait()
+            except Exception as e:
+                logger.warning(f"TTS 输出 '警报已解除' 失败: {e}")
+            
+            await record_confirmation_modality(user_id, input_modality, db) # 记录解除模态
+            log_multimodal(user_id, input_modality, recognized_text, "警报已解除")
+            await update_common_commands(user_id, recognized_text, db) # 记录常用指令
+            return {"command": recognized_text, "text": "警报已解除", "alert": current_alert_status}
+        else:
+            # 警报仍然激活，但用户说了其他话 (不是解除指令)
+            # 保持警报，返回提示信息
+            # log_multimodal(user_id, input_modality, recognized_text, "警报未解除，请先解除。")
+            # await update_common_commands(user_id, recognized_text, db) # 这种情况下是否记录常用指令？
+            return {"command": recognized_text, "text": "警报未解除，请先解除警报或确认您的指令。", "alert": current_alert_status}
+
+    # 3. 检查是否匹配预设指令
+    response_text = get_command_response(processed_text)
+    if response_text:
+        try:
+            tts_engine.say(response_text)
+            tts_engine.runAndWait()
+        except Exception as e:
+            logger.warning(f"TTS 输出预设指令响应失败: {e}")
+        
+        log_multimodal(user_id, input_modality, recognized_text, response_text)
+        await update_common_commands(user_id, recognized_text, db)
+        return {"command": recognized_text, "text": response_text, "alert": current_alert_status}
+
+    # 4. 如果未匹配任何预设指令，则调用大模型进行回答
+    logger.info(f"用户 {user_id} (通过 {input_modality}) 发起大模型请求: '{recognized_text}'")
+    try:
+        memory = db.query(UserMemory).filter(UserMemory.user_id == user_id).one()
+        history = json.loads(memory.content)
+    except NoResultFound:
+        history = []
+        memory = UserMemory(user_id=user_id, content="[]") # 确保 content 是有效的JSON "[]"
+
+    history.append({"role": "user", "content": processed_text}) # 使用处理过别名的文本
+
+    MAX_HISTORY = 9
+    if len(history) > MAX_HISTORY:
+        history = history[-MAX_HISTORY:]
+
+    ai_reply = await call_zhipu_chat(history)
+    history.append({"role": "assistant", "content": ai_reply})
+    memory.content = json.dumps(history, ensure_ascii=False)
+    db.merge(memory) # 使用 merge 来处理新建或更新
+    db.commit()
+    logger.info(f"用户 {user_id} 对话历史已更新")
+    
+    try:
+        tts_engine.say(ai_reply)
+        tts_engine.runAndWait()
+    except Exception as e:
+        logger.warning(f"TTS 输出大模型回复失败: {e}")
+
+    log_multimodal(user_id, input_modality, recognized_text, ai_reply)
+    await update_common_commands(user_id, recognized_text, db) # 大模型回复也算常用
+    return {"command": recognized_text, "text": ai_reply, "alert": current_alert_status}
+
+
+async def process_text_command(text_command: str, user_id: int, db: Session) -> Dict[str, Any]:
+    """
+    处理直接输入的文本指令并返回响应。
+    """
+    try:
+        processed_text = text_command.strip()
+        if not processed_text:
+            logger.warning(f"用户 {user_id} 输入的文本指令为空。")
+            return {"command": "", "text": "请输入有效指令。", "alert": alert_active}
+
+        logger.info(f"处理文本指令: '{processed_text}' for user_id: {user_id}")
+        # 调用核心文本处理逻辑
+        return await _process_recognized_text(processed_text, user_id, db, input_modality="text_input")
+
+    except Exception as e:
+        logger.error(f"文本指令处理错误: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"文本指令处理错误: {str(e)}"
+        )

@@ -140,6 +140,81 @@ async function toggleRecording() {
   // }
 }
 
+// 函数：处理来自后端的响应 (被文本处理共用)
+async function handleBackendResponse(responseData, recognizedCommandText = "") {
+  const aiResponseText = responseData.text;
+  const commandUsed = recognizedCommandText || responseData.command; // 如果是文本输入，responseData.command可能就是输入的文本
+
+  const aiResponseOutput = document.querySelector('#textInput'); // 在driver.html中是 #textInput
+  const lastCommandDisplay = document.getElementById('lastCommandDisplay'); // 在driver.html中新增的
+
+  if (aiResponseOutput) aiResponseOutput.textContent = aiResponseText;
+  if (lastCommandDisplay) lastCommandDisplay.textContent = `上次命令: ${commandUsed}`;
+
+  // 根据后端返回的alert状态控制闪光灯
+  if (responseData.hasOwnProperty('alert')) {
+    if (responseData.alert) {
+      isDriverAlertActive = true;
+      if (window.startAppScreenFlash) window.startAppScreenFlash(0, 600, 'red');
+    } else {
+      isDriverAlertActive = false;
+      if (window.stopAppScreenFlash) window.stopAppScreenFlash();
+    }
+  }
+  if (aiResponseText.trim().includes('警报已解除')) {
+    if (window.stopAppScreenFlash) {
+      window.stopAppScreenFlash();
+    }
+  }
+
+  // 调用通用的前端命令处理逻辑
+  handleVoiceCommand(aiResponseText); // 用AI的回复文本来触发前端动作（如音乐播放）
+}
+
+
+// 新增：处理文本输入指令的函数
+async function processTextInput(commandText) {
+  if (!commandText || commandText.trim() === "") {
+    showError("指令不能为空！");
+    return;
+  }
+
+  const aiResponseOutput = document.querySelector('#textInput'); // AI回复显示区域
+  const lastCommandDisplay = document.getElementById('lastCommandDisplay'); // 上次命令显示
+  const commandTextInputField = document.getElementById('commandTextInput'); // 文本输入框本身
+
+
+  showLoading('正在处理指令...');
+  if (lastCommandDisplay) lastCommandDisplay.textContent = `发送命令: ${commandText}`;
+  if (commandTextInputField) commandTextInputField.value = ""; // 清空输入框
+
+  try {
+    const currentUser = session.get('currentUser');
+    const formData = new FormData(); // 后端 /api/speech-to-text 期望 FormData
+    formData.append('text_command', commandText); // 发送文本指令
+
+    const response = await fetch('http://localhost:8000/api/text-command', {
+      method: 'POST',
+      headers: { 'X-User-ID': currentUser?.id },
+      body: formData
+    });
+
+    if (!response.ok) throw await response.json();
+
+    const responseData = await response.json();
+    showSuccess('指令已发送'); // 或等待后端确认
+    await handleBackendResponse(responseData, commandText); // 使用公共函数处理响应
+
+  } catch (err) {
+    showError('指令处理失败: ' + (err.detail || err.message || '服务器错误'));
+    if (aiResponseOutput) aiResponseOutput.textContent = '处理失败，请重试。';
+    // 确保出错时也尝试停止闪光灯
+    if (isDriverAlertActive && window.stopAppScreenFlash) window.stopAppScreenFlash();
+  } finally {
+    hideLoading();
+  }
+}
+
 // 处理视频识别
 async function processVideo() {
   showLoading('正在处理视频...');
@@ -243,6 +318,9 @@ function initMultimedia() {
   document.getElementById('voiceBtn')?.addEventListener('click', toggleRecording);
   document.getElementById('videoBtn')?.addEventListener('click', processVideo);
   document.getElementById('gestureBtn')?.addEventListener('click', processGesture);
+
+  // 将 processTextInput 挂载到 window，以便 driver.js 可以调用
+  window.processDriverTextInput = processTextInput;
 }
 
 // 页面加载完成后初始化

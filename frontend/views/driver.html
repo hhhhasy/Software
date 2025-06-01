@@ -258,6 +258,14 @@
                                 <i class="fas fa-microphone"></i>
                                 <span>按下说话</span>
                             </button>
+                            <!-- 新增：文本输入区域 -->
+                            <div class="text-input-area">
+                                <input type="text" id="commandTextInput" placeholder="输入指令或说出指令..." class="command-input-field">
+                                <button id="sendCommandBtn" class="btn-primary send-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>发送</span>
+                                </button>
+                            </div>
                             <div class="voice-output">
                                 <div class="output-label">回答:</div>
                                 <div class="output-content" id="textInput">您好，我能为您做什么？</div>
@@ -269,15 +277,15 @@
                         </div>
                         <div class="voice-commands">
                             <h4>常用语音指令:</h4>
-                            <div class="command-chips">
-                                <div class="command-chip">打开空调</div>
-                                <div class="command-chip">播放音乐</div>
-                                <div class="command-chip">导航到家</div>
-                                <div class="command-chip">调低温度</div>
-                                <div class="command-chip">打开车窗</div>
-                                <div class="command-chip">设置目的地</div>
-                                <div class="command-chip">来电接听</div>
-                                <div class="command-chip">系统状态</div>
+                            <div class="command-chips" id="commonCommandChips"> <!-- 给父元素加ID方便JS操作 -->
+                                <div class="command-chip" data-command="打开空调">打开空调</div>
+                                <div class="command-chip" data-command="播放音乐">播放音乐</div>
+                                <div class="command-chip" data-command="导航到家">导航到家</div>
+                                <div class="command-chip" data-command="调低温度">调低温度</div>
+                                <div class="command-chip" data-command="打开车窗">打开车窗</div>
+                                <div class="command-chip" data-command="设置目的地">设置目的地</div>
+                                <div class="command-chip" data-command="来电接听">来电接听</div>
+                                <div class="command-chip" data-command="系统状态">系统状态</div>
                             </div>
                         </div>
                     </div>

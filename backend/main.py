@@ -9,7 +9,7 @@ import tempfile
 import re
 import json
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body
+from fastapi import FastAPI, HTTPException, File, UploadFile, Request, Depends, status, Query, Body, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -499,6 +499,41 @@ async def get_all_user_preferences(db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取所有用户偏好信息时发生错误"
+        )
+    
+
+
+
+@app.post("/api/text-command", response_model=SpeechResponse) # 可以复用 SpeechResponse
+async def handle_text_command(
+    request: Request,
+    # 方案1: 通过 Form data 接收 (与前端发送 FormData('text_command', commandText) 对应)
+    command_input: str = Form(..., alias="text_command"), # 使用 alias 匹配前端的字段名
+    db: Session = Depends(get_db)
+):
+    """处理来自文本框的指令输入"""
+    user_id_str = request.headers.get("X-User-ID")
+    if not user_id_str or not user_id_str.isdigit():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="缺少或非法的用户 ID")
+    user_id = int(user_id_str)
+
+    # 如果使用方案1 (Form data):
+    text_to_process = command_input
+
+    if not text_to_process or not text_to_process.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="指令文本不能为空")
+
+    try:
+        logger.info(f"API /api/text-command received: '{text_to_process}' for user_id: {user_id}")
+        result = await services.process_text_command(text_to_process, user_id, db)
+        return result
+    except HTTPException: # 直接 re-raise services 层抛出的 HTTPException
+        raise
+    except Exception as e:
+        logger.error(f"处理文本指令 API 调用时发生意外错误: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"处理文本指令时发生服务器内部错误: {str(e)}"
         )
 
 # ============= 应用启动 =============

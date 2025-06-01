@@ -1605,3 +1605,51 @@ body.theme-light .btn-primary:hover {
 body.theme-light .info-item {
   border-bottom: 1px solid var(--border-light);
 }
+
+.text-input-area {
+  display: flex;
+  width: 100%;
+  max-width: 600px; /* 或者你希望的最大宽度 */
+  margin: 1rem 0; /* 上下边距 */
+  gap: 0.5rem;
+}
+
+.command-input-field {
+  flex-grow: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: 20px; /* 圆角与按钮协调 */
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: var(--transition-normal);
+}
+
+.command-input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.2);
+}
+
+.send-btn { /* 复用 .btn-primary 的基础样式，但可能需要调整大小 */
+  padding: 0.75rem 1.2rem;
+  border-radius: 20px;
+  white-space: nowrap; /* 防止文字换行 */
+}
+
+/* 亮色主题下的文本输入框 */
+body.theme-light .command-input-field {
+  background-color: #f8f9fa;
+  border-color: var(--border-light);
+  color: var(--text-primary); /* 继承自 body.theme-light */
+}
+
+body.theme-light .command-input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.15);
+}
+
+/* 确保常用指令的 data-command 能被 JS 读取 */
+.command-chip[data-command] {
+    cursor: pointer; /* 表明可点击 */
+}

@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
+from security import encrypt_password,decrypt_password
 
 # 导入本地模块
 from models import (
@@ -101,12 +102,26 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     """用户登录API，返回用户角色"""
     try:
         db_user = db.query(User).filter(User.username == user.username).first()
-        if not db_user or db_user.password != user.password:
+        
+        try:
+            decrypted_pwd = decrypt_password(db_user.password)
+        except ValueError:
+            raise HTTPException(status_code=500, detail="密码解密失败")
+
+        if not db_user or decrypted_pwd != user.password:
             logger.warning(f"登录失败: 用户 {user.username} 用户名或密码错误")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
                 detail="用户名或密码错误"
             )
+
+        
+        # if not db_user or db_user.password != user.password:
+        #     logger.warning(f"登录失败: 用户 {user.username} 用户名或密码错误")
+        #     raise HTTPException(
+        #         status_code=status.HTTP_401_UNAUTHORIZED, 
+        #         detail="用户名或密码错误"
+        #     )
         
         logger.info(f"用户 {user.username} 角色 {db_user.role} 登录成功")
         return {"id": db_user.id,"role": db_user.role}
@@ -136,7 +151,10 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
                 detail="用户名已存在"
             )
 
-        new_user = User(username=user.username, password=user.password, role=user.role)
+        encrypted_pwd = encrypt_password(user.password)
+        new_user = User(username=user.username, password=encrypted_pwd, role=user.role)
+        
+        # new_user = User(username=user.username, password=user.password, role=user.role)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
@@ -147,10 +165,11 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()  # 确保事务回滚
-        logger.error(f"注册时发生错误: {str(e)}")
+        logger.error(f"注册时发生错误: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="注册失败，请稍后再试"
+            # detail="注册失败，请稍后再试"
+            detail=f"注册失败: {str(e)}"
         )
 
 @app.post("/api/speech-to-text", response_model=SpeechResponse)

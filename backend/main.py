@@ -165,11 +165,10 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()  # 确保事务回滚
-        logger.error(f"注册时发生错误: {e}")
+        logger.error(f"注册时发生错误:str{e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            # detail="注册失败，请稍后再试"
-            detail=f"注册失败: {str(e)}"
+            detail="注册失败，请稍后再试"
         )
 
 @app.post("/api/speech-to-text", response_model=SpeechResponse)

@@ -3,7 +3,7 @@
 包含系统所有数据结构定义和数据库相关配置
 """
 import os
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List,Literal
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
@@ -19,10 +19,10 @@ load_dotenv()
 def get_database_url():
     """从环境变量获取数据库连接信息，如果不存在则使用默认值"""
     db_user = os.getenv("DB_USER", "root")
-    db_password = os.getenv("DB_PASSWORD", "123456")
+    db_password = os.getenv("DB_PASSWORD", "041202")
     db_host = os.getenv("DB_HOST", "localhost")
     db_port = os.getenv("DB_PORT", "3306")
-    db_name = os.getenv("DB_NAME", "software")
+    db_name = os.getenv("DB_NAME", "soft")
     
     return f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
@@ -110,11 +110,14 @@ class UserBase(BaseModel):
 class UserLogin(UserBase):
     """用户登录验证模型"""
     password: str = Field(..., min_length=6, description="密码")
+    # role:str = Field(..., min_length=5, description="身份")
 
 class UserRegister(UserLogin):
     """用户注册验证模型"""
     confirm_password: str = Field(..., min_length=6, description="确认密码")
-    
+    # identify:str = Field(..., min_length=5, description="身份")
+    role:Literal["admin", "user", "driver", "maintenance_personne"]
+
     @field_validator('confirm_password')
     def passwords_match(cls, v, info):
         """验证两次输入的密码是否匹配"""

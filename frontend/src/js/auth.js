@@ -74,10 +74,15 @@ async function handleRegister(e) {
   const newUser = {
     username: document.getElementById('newUsername').value,
     password: document.getElementById('newPassword').value,
-    confirm_password: document.getElementById('confirmPassword').value
-  };
-
+    confirm_password: document.getElementById('confirmPassword').value,
+    role:document.querySelector('input[name="userRole"]:checked')?.value
+  }
   try {
+    if (!newUser.role) {
+      alert("请选择用户身份");
+      return;
+    }
+
     // 前端验证
     if (newUser.password !== newUser.confirm_password) {
       throw { detail: '两次输入的密码不匹配' };

@@ -184,3 +184,244 @@ a:hover {
     padding: 1rem 2.5rem 1rem 1rem;
   }
 }
+
+/* 认证页面样式 */
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #303f9f 100%);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  padding: 20px;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 认证容器 */
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 128, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transform: translateY(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.auth-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25), 0 0 25px rgba(0, 0, 128, 0.2);
+}
+
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #3f51b5, #7986cb, #3f51b5);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.header h1 {
+  color: #303f9f;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.neon-line {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #3f51b5, transparent);
+  margin: 1rem auto;
+  width: 80%;
+  border-radius: 3px;
+}
+
+/* 输入组样式 */
+.input-group {
+  position: relative;
+  margin-bottom: 1.8rem;
+}
+
+input {
+  width: 100%;
+  padding: 1.1rem 2.5rem 1.1rem 1.2rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(63, 81, 181, 0.3);
+  border-radius: 10px;
+  color: #333;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+input:focus {
+  outline: none;
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+  background: #fff;
+}
+
+input::placeholder {
+  color: #9e9e9e;
+}
+
+.input-icon {
+  position: absolute;
+  right: 1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #3f51b5;
+  font-size: 1.2rem;
+}
+
+/* 认证按钮 */
+.auth-container button {
+  width: 100%;
+  padding: 1.1rem;
+  background: linear-gradient(45deg, #3f51b5, #5c6bc0);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(63, 81, 181, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-container button:hover {
+  background: linear-gradient(45deg, #303f9f, #3f51b5);
+  box-shadow: 0 6px 20px rgba(63, 81, 181, 0.4);
+}
+
+.auth-container button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 10px rgba(63, 81, 181, 0.3);
+}
+
+.auth-container button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(45deg);
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.auth-container button:hover::after {
+  opacity: 1;
+}
+
+.switch-auth {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+a {
+  color: #3f51b5;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: #303f9f;
+  text-decoration: underline;
+}
+
+/* 响应式调整 */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 2rem 1.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  input {
+    padding: 1rem 2.5rem 1rem 1rem;
+  }
+}
+
+/* 水平排列两个角色选项 */
+.role-group {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(63, 81, 181, 0.3);
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-bottom: 1.8rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 单个选项 label */
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #3333338c;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+
+/* 隐藏原始 radio */
+.role-option input[type="radio"] {
+  display: none;
+}
+
+/* 外圈圆形 ⭕ */
+.custom-radio {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #3f51b5;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* 被选中时显示内圆点 */
+.role-option input[type="radio"]:checked + .custom-radio::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background-color: #3f51b5;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+}

@@ -136,7 +136,7 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
                 detail="用户名已存在"
             )
 
-        new_user = User(username=user.username, password=user.password, role="user")
+        new_user = User(username=user.username, password=user.password, role=user.role)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)

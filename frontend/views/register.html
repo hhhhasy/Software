@@ -29,8 +29,24 @@
                 <input type="password" id="confirmPassword" placeholder="确认密码" required>
                 <span class="input-icon"><i class="fas fa-key"></i></span>
             </div>
+
+            <div class="input-group role-group">
+                <label class="role-option">
+                    <input type="radio" name="userRole" value="user" required>
+                    <span class="custom-radio"></span>
+                    <span>乘客</span>
+                </label>
+                <label class="role-option">
+                    <input type="radio" name="userRole" value="driver" required>
+                    <span class="custom-radio"></span>
+                    <span>驾驶员</span>
+                </label>
+            </div>
+
+
             <button type="submit"><i class="fas fa-user-check"></i> 立即注册</button>
             <p class="switch-auth">已有账号？<a href="login.html">立即登录 <i class="fas fa-arrow-right"></i></a></p>
+        
         </form>
     </div>
     <script type="module" src="../src/js/auth.js"></script>

@@ -803,9 +803,11 @@ body {
 }
 
 .setting-select {
+  /* background: rgba(0, 0, 255, 0.2); */
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-light);
-  color: var(--text-primary);
+  color: rgba(21, 203, 227, 0.8);
+  /* color: var(--text-primary);  */
   padding: 0.5rem;
   border-radius: 6px;
   outline: none;

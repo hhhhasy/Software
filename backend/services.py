@@ -565,7 +565,7 @@ async def process_video():
                                 shake_counter = 0
 
                             if nod_counter >= NOD_THRESH_COUNT:
-                                warning = "请注意，您正在打瞌睡！"
+                                warning = "您的动作状态为确认!"
                                 if warning not in warnings:
                                     warnings.append(warning)
                                     try:
@@ -575,7 +575,7 @@ async def process_video():
                                         logger.warning(f"语音输出失败: {str(e)}")
 
                             if shake_counter >= SHAKE_THRESH_COUNT:
-                                warning = "请注意，您正在摇头！"
+                                warning = "您的动作状态为拒绝!"
                                 if warning not in warnings:
                                     warnings.append(warning)
                                     try:

@@ -48,6 +48,7 @@ let isRecording = false;
 let currentStream = null; // 添加此变量用于后续关闭麦克风
 
 // 切换语音录制状态
+//changed！！！！录音写入
 async function toggleRecording() {
   const voiceBtn = document.querySelector('#voiceBtn');
 
@@ -64,7 +65,7 @@ async function toggleRecording() {
       };
 
       mediaRecorder.onstop = async () => {
-        hideLoading(); // 隐藏“准备录音”的加载
+        hideLoading(); // 隐藏"准备录音"的加载
         showLoading('正在识别语音...');
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const formData = new FormData();
@@ -77,7 +78,6 @@ async function toggleRecording() {
             headers: {
               'X-User-ID': currentUser?.id   // 从登录状态中获得
             },
-
             body: formData
           });
 
@@ -106,29 +106,80 @@ async function toggleRecording() {
       };
 
       mediaRecorder.start();
-      hideLoading(); // 隐藏“准备录音”的加载
+      hideLoading(); // 隐藏"准备录音"的加载
       isRecording = true;
       if(voiceBtn) voiceBtn.textContent = '录音中...';
 
-      // 10秒后自动停止
+      // 15秒后自动停止（延长时间给用户更多控制）
       setTimeout(() => {
         if (isRecording && mediaRecorder && mediaRecorder.state === "recording") {
-          mediaRecorder.stop();
-          if(currentStream) currentStream.getTracks().forEach(track => track.stop());
-          isRecording = false;
-          if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入';
+          stopRecording();
           showSuccess('录音已自动停止');
         }
-      }, 5000);
+      }, 15000);
 
     } catch (err) {
       hideLoading();
       showError('无法访问麦克风: ' + err.message);
       console.error('录音错误:', err);
-      isRecording = false; // 确保状态被重置
-      if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入'; // 恢复按钮文本
+      resetRecordingState();
     }
+  } else {
+    // 手动停止录音
+    stopRecording();
+    showSuccess('录音已手动停止');
   }
+}
+
+// 停止录音的独立函数
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
+  }
+  if(currentStream) {
+    currentStream.getTracks().forEach(track => track.stop()); // 释放麦克风
+  }
+  resetRecordingState();
+}
+
+// 重置录音状态的函数
+function resetRecordingState() {
+  isRecording = false;
+  const voiceBtn = document.querySelector('#voiceBtn');
+  if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入'; // 恢复按钮文本
+}
+//*************************************************************** */
+//   // ADDED 停止录音的独立函数
+// function stopRecording() {
+//   if (mediaRecorder && mediaRecorder.state === "recording") {
+//     mediaRecorder.stop();
+//   }
+//   if(currentStream) {
+//     currentStream.getTracks().forEach(track => track.stop()); // 释放麦克风
+//   }
+//   resetRecordingState();
+// }
+// // ADDED 重置录音状态的函数
+// function resetRecordingState() {
+//   const voiceBtn = document.querySelector('#voiceBtn');
+//   const voiceWaves = document.querySelectorAll('.voice-wave');
+  
+//   isRecording = false;
+  
+//   // 恢复按钮状态
+//   if(voiceBtn) {
+//     voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>按下说话</span>';
+//     voiceBtn.classList.remove('recording');
+//   }
+  
+//   // 停止语音波形动画
+//   voiceWaves.forEach(wave => {
+//     wave.style.animation = '';
+//   });
+  
+//   hideLoading(); // 如果之前有加载指示，确保隐藏
+// }
+//*************************************************************** */
   // else {
   //   if (mediaRecorder && mediaRecorder.state === "recording") {
   //       mediaRecorder.stop();
@@ -138,7 +189,7 @@ async function toggleRecording() {
   //   if(voiceBtn) voiceBtn.textContent = '🎤 语音指令输入';
   //   hideLoading(); // 如果之前有加载指示，确保隐藏
   // }
-}
+//}
 
 // 函数：处理来自后端的响应 (被文本处理共用)
 async function handleBackendResponse(responseData, recognizedCommandText = "") {

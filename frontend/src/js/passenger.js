@@ -30,7 +30,8 @@ function initMusicPlayer() {
 
     // 简单播放列表
     const playlist = [
-        '../assets/audio/song1.mp3'
+        '../assets/audio/song1.mp3',
+        '../assets/audio/song2.mp3',
     ];
     let currentIndex = 0;
 

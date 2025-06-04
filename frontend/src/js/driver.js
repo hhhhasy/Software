@@ -318,7 +318,8 @@ function initMusicPlayer() {
   if (!audio) return;
 
   const playlist = [
-    "../assets/audio/song1.mp3"
+    "../assets/audio/song1.mp3",
+    "../assets/audio/song2.mp3",
   ];
   let currentIndex = 0;
 

@@ -22,7 +22,7 @@ def get_database_url():
     db_password = os.getenv("DB_PASSWORD", "041202")
     db_host = os.getenv("DB_HOST", "localhost")
     db_port = os.getenv("DB_PORT", "3306")
-    db_name = os.getenv("DB_NAME", "soft")
+    db_name = os.getenv("DB_NAME", "software")
     
     return f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 

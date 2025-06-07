@@ -12,6 +12,8 @@ function createWindow() {
 
     // 隐藏默认菜单栏
     mainWindow.setMenu(null)
+    //  加上这一行即可自动打开开发者工具
+    //mainWindow.webContents.openDevTools();
 
     mainWindow.loadFile('views/login.html')
 }

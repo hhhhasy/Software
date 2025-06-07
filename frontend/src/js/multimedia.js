@@ -340,15 +340,13 @@ async function processGesture() {
           gestureMessage = '检测到张开手掌！';
           break;
         case 'Pointing_Up':
-          document.getElementById('prevBtn')?.click();
-          gestureMessage = '检测到指向上方,播放上一首音乐';
+          gestureMessage = '检测到指向上方！';
           break;
         case 'Thumb_Down':
           gestureMessage = '检测到反对手势！';
           break;
         case 'ILoveYou':
-          document.getElementById('nextBtn')?.click();
-          gestureMessage = '检测到爱你手势,播放下一首音乐';
+          gestureMessage = '检测到爱你手势！';
           break;
       }
       showSuccess(gestureMessage);

@@ -452,7 +452,7 @@ async def process_video():
                     gaze_vector = models["gaze_det"](gaze_input)[models["gaze_det"].output(0)][0]
 
                     # 偏离判断（阈值可调）
-                    if abs(gaze_vector[0]) > 0.2 or abs(gaze_vector[1]) > 0.2:
+                    if abs(gaze_vector[0]) > 0.4 or abs(gaze_vector[1]) > 0.4:
                         # 如果是刚开始偏离，记录时间
                         if gaze_off_start_time is None:
                             gaze_off_start_time = time.time()

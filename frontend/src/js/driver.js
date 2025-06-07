@@ -1,6 +1,97 @@
 import session from '../utils/session.js';
 import { showLoading, hideLoading, showError, showSuccess } from '../utils/uiUtils.js';
 
+// 新新增：
+// 默认的常用指令
+const DEFAULT_COMMANDS = [
+    '打开空调', '播放音乐', '导航到家', '调低温度', 
+    '打开车窗', '设置目的地', '来电接听', '系统状态'
+];
+
+/**
+ * 加载用户常用指令
+ */
+async function loadCommonCommands() {
+    // print(1);
+    const currentUser = session.get('currentUser');
+    console.log('当前用户信息:', currentUser);
+    if (!currentUser) {
+        console.log('未找到当前用户信息');
+        renderCommands(DEFAULT_COMMANDS.slice(0, 10));
+        return;
+    }
+
+    try {
+        // 从后端获取用户偏好数据
+        const apiUrl = `http://localhost:8000/api/user-preferences/${currentUser.id}`;
+        console.log('请求API:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        console.log('API响应状态:', response.status);
+        
+        if (response.ok) {
+            const preferences = await response.json();
+            console.log('获取到的用户偏好数据:', preferences);
+            let finalCommands = [...DEFAULT_COMMANDS];
+            
+            // 如果用户有自定义常用指令
+            if (preferences.common_commands && Object.keys(preferences.common_commands).length > 0) {
+                // 按频率排序用户的常用指令
+                const userCommands = Object.entries(preferences.common_commands)
+                    .sort(([,a], [,b]) => b - a) // 按频率降序排序
+                    .map(([command]) => command);
+                
+                // 移除默认指令中已存在的用户指令，避免重复
+                const filteredDefaults = DEFAULT_COMMANDS.filter(
+                    cmd => !userCommands.includes(cmd)
+                );
+                
+                // 用户指令置于首位，其余保持原顺序
+                finalCommands = [...userCommands, ...filteredDefaults];
+            }
+            
+            renderCommands(finalCommands.slice(0, 10));
+        } else {
+            console.warn('获取用户偏好失败，使用默认指令');
+            renderCommands(DEFAULT_COMMANDS.slice(0, 10));
+        }
+    } catch (error) {
+        console.error('加载常用指令详细错误:', error);
+        renderCommands(DEFAULT_COMMANDS.slice(0, 10));
+    }
+}
+
+// 在renderCommands函数中添加更多日志
+function renderCommands(commands) {
+    console.log('准备渲染指令:', commands);
+    const container = document.getElementById('commonCommandChips');
+    console.log('指令容器元素:', container);
+    
+    if (!container) {
+        console.error('未找到指令容器元素');
+        return;
+    }
+    
+    // 清空现有内容
+    container.innerHTML = '';
+    
+    // 创建指令芯片
+    commands.forEach(command => {
+        const chip = document.createElement('div');
+        chip.className = 'command-chip';
+        chip.setAttribute('data-command', command);
+        chip.textContent = command;
+        
+        // 添加点击事件（如果需要）
+        chip.addEventListener('click', () => {
+            // 这里可以添加点击指令的处理逻辑
+            console.log('选择了指令:', command);
+            // 可以调用语音输入或文本输入的处理函数
+        });
+        
+        container.appendChild(chip);
+    });
+}
 
 // 新增：获取闪光灯相关的DOM元素
 const flashOverlayContainer = document.getElementById('flash-overlay-container');
@@ -318,8 +409,7 @@ function initMusicPlayer() {
   if (!audio) return;
 
   const playlist = [
-    "../assets/audio/song1.mp3",
-    "../assets/audio/song2.mp3",
+    "../assets/audio/song1.mp3"
   ];
   let currentIndex = 0;
 
@@ -778,6 +868,11 @@ function initCardHoverEffects() {
 function initDriverPage() {
   displayUserInfo();
   initLogout();
+  //initCardHoverEffects();
+  // 延迟加载常用指令，确保DOM已完全加载
+  setTimeout(() => {
+    loadCommonCommands();
+  }, 500);
   initTabSwitching();
   initMusicPlayer();
   initSpeedometer();
@@ -804,3 +899,4 @@ document.addEventListener('DOMContentLoaded', initDriverPage);
 
 // 导出函数供其他模块使用
 export { initMusicPlayer, initTabSwitching };
+console.log('指令渲染完成');
